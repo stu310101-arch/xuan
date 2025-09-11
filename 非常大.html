@@ -68,7 +68,7 @@
         @keyframes confetti-fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
 
         #balloon-game-canvas { cursor: crosshair; background: linear-gradient(to bottom, #87CEEB, #f0f9ff); }
-        
+
         #favorite-btn.favorited { color: #FBBF24; /* yellow-400 */ }
 
 
@@ -99,15 +99,15 @@
         .cloud.c2::before { width: 70px; height: 70px; top: -35px; left: 15px; } .cloud.c2::after  { width: 90px; height: 90px; top: -45px; right: 15px; }
         .cloud.c3::before { width: 130px; height: 130px; top: -65px; left: 30px; } .cloud.c3::after  { width: 150px; height: 150px; top: -75px; right: 30px; }
         @keyframes float { from { transform: translateX(-300px); } to { transform: translateX(calc(100vw + 100px)); } }
-        
+
         #monster-game-page { background: radial-gradient(ellipse at 50% 100%, #6b7280, #1f2937); }
-        
+
         .text-stroke-white { text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff; }
         .text-stroke-red { text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff; }
 
         .confetti { position: absolute; width: 10px; height: 20px; opacity: 0.8; animation: fall 5s linear infinite; }
         @keyframes fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
-        
+
         @keyframes monster-bob { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0); } }
         .monster-bob-animation { animation: monster-bob 2s ease-in-out infinite; }
         @keyframes monster-tilt { 0%, 100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-5px) rotate(-8deg); } 75% { transform: translateY(-5px) rotate(8deg); } }
@@ -168,6 +168,16 @@
         .potion-bubble.paired {
             pointer-events: none;
         }
+        .potion-bubble.shake-anim {
+            animation: shake-it 0.2s ease-in-out;
+        }
+        @keyframes shake-it {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-8px) rotate(-3deg); }
+            50% { transform: translateX(8px) rotate(3deg); }
+            75% { transform: translateX(-8px) rotate(-3deg); }
+            100% { transform: translateX(0) rotate(0); }
+        }
         .magic-line {
             stroke: #fde047;
             stroke-width: 4;
@@ -208,7 +218,7 @@
             50% { transform: translateX(-50%) scale(1.1); }
             100% { transform: translateX(-50%) scale(1); }
         }
-        
+
         @keyframes pop-in {
             0% { transform: scale(0); }
             100% { transform: scale(1); }
@@ -233,14 +243,13 @@
             opacity: 0.5;
             box-shadow: none;
         }
-
     </style>
 </head>
 <body class="text-gray-700">
+    <!-- 特效容器 -->
+    <div id="fx-container"></div>
 
     <div id="app" class="container mx-auto p-4 max-w-5xl">
-        <!-- 特效容器 -->
-        <div id="fx-container"></div>
         
         <!-- 主頁面 -->
         <div id="home-page" class="relative text-center min-h-screen flex flex-col justify-center items-center">
@@ -325,6 +334,25 @@
             <div id="favorite-folders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <!-- JS will generate folder buttons here -->
             </div>
+        </div>
+
+        <!-- 搜尋結果頁面 -->
+        <div id="search-results-page" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="showPage('home-page')" class="btn btn-purple"><i class="fa fa-home mr-2"></i>返回主頁</button>
+                <h2 class="text-3xl font-bold" style="color: var(--color-text-dark);">搜尋結果</h2>
+                <div></div>
+            </div>
+            <div id="search-results-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Search results will be injected here by JS -->
+            </div>
+        </div>
+
+        <!-- 查無單字頁面 -->
+        <div id="no-results-page" class="hidden text-center min-h-screen flex flex-col justify-center items-center">
+            <h2 class="text-4xl font-bold text-red-500 mb-4">查無此字</h2>
+            <p class="text-xl mb-8 text-gray-600">抱歉，單字庫中暫時沒有關於「<span id="no-results-term" class="font-bold text-purple-500"></span>」的資料。</p>
+            <button onclick="showPage('home-page')" class="btn btn-purple text-xl"><i class="fa fa-home mr-2"></i>返回主頁</button>
         </div>
 
 
@@ -470,18 +498,20 @@
     <!-- 魔藥煉製遊戲 Wrapper -->
     <div id="potion-game-wrapper" class="hidden fixed inset-0 w-full h-full text-white">
         <!-- Start Screen -->
-        <div id="potion-start-screen" class="w-full h-full flex items-center justify-center text-center p-8 space-y-8">
+        <div id="potion-start-screen" class="w-full h-full flex items-center justify-center text-center p-8">
             <div>
                 <h1 class="text-6xl md:text-8xl font-bold text-yellow-300 kalam-font" style="text-shadow: 0 0 15px #fde047;">Word Potion</h1>
                 <p class="text-xl text-gray-300">單字魔藥</p>
-                <div class="space-y-4 flex flex-col items-center mt-8">
-                    <h2 class="text-2xl text-violet-300">選擇難度</h2>
-                    <button data-difficulty="easy" class="potion-difficulty-btn btn-magic w-64 text-lg font-bold py-3 px-6 rounded-full">初級 (3題)</button>
-                    <button data-difficulty="medium" class="potion-difficulty-btn btn-magic w-64 text-lg font-bold py-3 px-6 rounded-full">中級 (5題)</button>
-                    <button data-difficulty="hard" class="potion-difficulty-btn btn-magic w-64 text-lg font-bold py-3 px-6 rounded-full">高級 (8題)</button>
-                    <button data-difficulty="ultimate" class="potion-difficulty-btn btn-magic w-64 text-lg font-bold py-3 px-6 rounded-full">終極 (10題)</button>
+                <div class="space-y-3 flex flex-col items-center mt-8">
+                    <h2 class="text-2xl text-violet-300 mb-2">選擇難度</h2>
+                    <button data-difficulty="trainee" class="potion-difficulty-btn btn-magic w-80 text-lg font-bold py-2 px-6 rounded-full">見習學員 (3題)</button>
+                    <button data-difficulty="novice" class="potion-difficulty-btn btn-magic w-80 text-lg font-bold py-2 px-6 rounded-full">新手巫師 (5題)</button>
+                    <button data-difficulty="mage" class="potion-difficulty-btn btn-magic w-80 text-lg font-bold py-2 px-6 rounded-full">普通法師 (8題)</button>
+                    <button data-difficulty="alchemist" class="potion-difficulty-btn btn-magic w-80 text-lg font-bold py-2 px-6 rounded-full">有點厲害煉藥師 (10題)</button>
+                    <button data-difficulty="elder" class="potion-difficulty-btn btn-magic w-80 text-lg font-bold py-2 px-6 rounded-full">魔法學院長老 (15題)</button>
+                    <button data-difficulty="master" class="potion-difficulty-btn btn-magic w-80 text-lg font-bold py-2 px-6 rounded-full">魔藥煉製專精大師 (20題)</button>
                 </div>
-                 <button id="potion-collection-btn" class="mt-8 text-yellow-300 hover:text-yellow-200 underline text-lg">查看我的魔藥收藏室</button>
+                 <button id="potion-collection-btn" class="mt-6 text-yellow-300 hover:text-yellow-200 underline text-lg">查看我的魔藥收藏室</button>
                  <button onclick="endPractice()" class="mt-4 text-gray-400 hover:text-white">返回練習設定</button>
             </div>
         </div>
@@ -578,6 +608,11 @@
                 </svg>
             </div>
         </div>
+        
+        <!-- 新增：錯誤提示框 -->
+        <div id="potion-error-toast" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#fffde7] text-gray-800 p-6 rounded-2xl shadow-2xl z-[999] text-center border-4 border-red-400">
+            <p class="text-xl font-bold">兩個中文/英文不能配對<br>請仔細檢查</p>
+        </div>
 
         <!-- Level Complete Modal -->
         <div id="potion-level-complete-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50">
@@ -612,11 +647,1680 @@
         </div>
     </div>
 
-
     <script>
         // --- 資料庫 ---
         let vocabulary = [
           {
+  "word": "issue",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "議題；問題",
+      "example": {
+        "en": "Environmental protection is an important issue.",
+        "zh": "環境保護是一個重要的議題。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "發行；發布",
+      "example": {
+        "en": "The government issued a new set of regulations.",
+        "zh": "政府發布了一套新規定。"
+      }
+    }
+  ],
+  "synonyms": ["problem", "topic", "publish", "release"]
+},
+{
+  "word": "charge",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "收費；索價",
+      "example": {
+        "en": "The hotel charges $100 per night.",
+        "zh": "這家飯店每晚收費 100 美元。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "指控；控告",
+      "example": {
+        "en": "He was charged with theft.",
+        "zh": "他被指控犯下竊盜罪。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "衝向；猛攻",
+      "example": {
+        "en": "The soldiers charged at the enemy.",
+        "zh": "士兵們衝向敵軍。"
+      }
+    }
+  ],
+  "synonyms": ["fee", "accuse", "attack", "rush"]
+},
+{
+  "word": "object",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "物體；東西",
+      "example": {
+        "en": "The museum displays ancient objects.",
+        "zh": "博物館展示了古代的物品。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "目標；目的",
+      "example": {
+        "en": "Her main object is to pass the exam.",
+        "zh": "她的主要目標是通過考試。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "反對；抗議",
+        "example": {
+        "en": "Many citizens objected to the new policy.",
+        "zh": "許多市民反對這項新政策。"
+      }
+    }
+  ],
+  "synonyms": ["thing", "goal", "oppose", "protest"]
+},
+{
+  "word": "current",
+  "definitions": [
+    {
+      "pos": "(adj.)",
+      "meaning": "目前的；當前的",
+      "example": {
+        "en": "She is satisfied with her current job.",
+        "zh": "她對自己目前的工作感到滿意。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "潮流；水流；電流",
+      "example": {
+        "en": "The boat was carried away by the strong current.",
+        "zh": "船被強勁的水流沖走了。"
+      }
+    }
+  ],
+  "synonyms": ["present", "flow", "stream", "trend"]
+},
+{
+  "word": "figure",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "數字；數據",
+      "example": {
+        "en": "The sales figures have increased this year.",
+        "zh": "今年的銷售數字上升了。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "人物；身影",
+        "example": {
+        "en": "A tall figure was standing at the door.",
+        "zh": "一個高大的身影站在門口。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "認為；估計",
+        "example": {
+        "en": "I figure that he will arrive soon.",
+        "zh": "我認為他很快就會到。"
+      }
+    }
+  ],
+  "synonyms": ["number", "character", "think", "estimate"]
+},
+{
+  "word": "bear",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "忍受；承受",
+      "example": {
+        "en": "I can’t bear the pain any longer.",
+        "zh": "我再也無法忍受這種痛苦了。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "懷有；帶有",
+      "example": {
+        "en": "She still bears resentment toward him.",
+        "zh": "她仍對他懷有怨恨。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "熊",
+      "example": {
+        "en": "A bear was spotted in the forest.",
+        "zh": "森林裡發現了一隻熊。"
+      }
+    }
+  ],
+  "synonyms": ["endure", "carry", "animal"]
+},
+{
+  "word": "match",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "比賽；競賽",
+      "example": {
+        "en": "They won the basketball match.",
+        "zh": "他們贏得了籃球比賽。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "相配的人或物",
+      "example": {
+        "en": "They are a perfect match for each other.",
+        "zh": "他們是一對完美的伴侶。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "火柴",
+      "example": {
+        "en": "He lit a match to start the fire.",
+        "zh": "他點燃一根火柴生火。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "與…相符；匹配",
+      "example": {
+        "en": "The curtains don’t match the sofa.",
+        "zh": "窗簾和沙發不搭配。"
+      }
+    }
+  ],
+  "synonyms": ["contest", "pair", "stick", "fit"]
+},
+{
+  "word": "address",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "地址",
+      "example": {
+        "en": "Please write down your home address.",
+        "zh": "請寫下你的住址。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "演說；致詞",
+      "example": {
+        "en": "The president gave an inspiring address.",
+        "zh": "總統發表了一場鼓舞人心的演說。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "處理；應付",
+      "example": {
+        "en": "We must address this problem immediately.",
+        "zh": "我們必須立刻處理這個問題。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "稱呼",
+      "example": {
+        "en": "He was addressed as ‘Doctor Lee.’",
+        "zh": "他被稱呼為『李博士』。"
+      }
+    }
+  ],
+  "synonyms": ["location", "speech", "handle", "refer to"]
+},
+{
+  "word": "subject",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "主題；科目",
+      "example": {
+        "en": "Math is my favorite subject.",
+        "zh": "數學是我最喜歡的科目。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "臣民；受支配的人",
+      "example": {
+        "en": "The king’s subjects were loyal to him.",
+        "zh": "國王的臣民對他忠誠。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "使服從；受制於",
+      "example": {
+        "en": "The prisoners were subjected to harsh treatment.",
+        "zh": "囚犯受到嚴酷的對待。"
+      }
+    }
+  ],
+  "synonyms": ["topic", "discipline", "citizen", "subdue"]
+},
+{
+  "word": "light",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "光；光線",
+      "example": {
+        "en": "The light from the lamp filled the room.",
+        "zh": "燈光照亮了整個房間。"
+      }
+    },
+    {
+      "pos": "(adj.)",
+      "meaning": "輕的；少量的",
+      "example": {
+        "en": "This bag is light compared to yours.",
+        "zh": "這個包相對於你的來說很輕。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "點燃；照亮",
+      "example": {
+        "en": "He lit a candle during the blackout.",
+        "zh": "停電時，他點燃了一根蠟燭。"
+      }
+    }
+  ],
+  "synonyms": ["brightness", "gentle", "ignite", "illuminate"]
+},
+{
+  "word": "produce",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "農產品；農產品類",
+      "example": {
+        "en": "The supermarket sells a wide variety of fresh produce.",
+        "zh": "那家超市販售各類新鮮農產品。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "生產；製造",
+      "example": {
+        "en": "This factory produces steel parts for cars.",
+        "zh": "這家工廠生產汽車用的鋼製零件。"
+      }
+    }
+  ],
+  "synonyms": ["products", "manufacture", "generate"]
+},
+{
+  "word": "grace",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "使增色；為…增光",
+      "example": {
+        "en": "The renowned pianist graced the concert with her presence.",
+        "zh": "那位知名鋼琴家親臨音樂會並為其增色。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "優雅；恩典",
+      "example": {
+        "en": "She moves with remarkable grace.",
+        "zh": "她舉止優雅動人。"
+      }
+    }
+  ],
+  "synonyms": ["elegance", "honor", "adorn"]
+},
+{
+  "word": "address",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "稱呼（某人）；致詞",
+      "example": {
+        "en": "The mayor addressed the audience at the opening ceremony.",
+        "zh": "市長在開幕典禮上向觀眾致詞。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "處理；設法解決（問題）",
+      "example": {
+        "en": "The committee is addressing the issue of rising costs.",
+        "zh": "委員會正在處理成本上漲的問題。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "地址",
+      "example": {
+        "en": "Please write down your address for delivery.",
+        "zh": "請寫下你的地址以便寄送。"
+      }
+    }
+  ],
+  "synonyms": ["speak", "deal with", "location"]
+},
+{
+  "word": "bear",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "忍受；承擔",
+      "example": {
+        "en": "I can’t bear the noise any longer.",
+        "zh": "我再也無法忍受這個噪音了。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "帶有；懷有",
+      "example": {
+        "en": "She bears no grudge against him.",
+        "zh": "她對他沒有任何怨恨。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "熊（動物）",
+      "example": {
+        "en": "A bear was spotted near the campsite.",
+        "zh": "有人在營地附近發現一隻熊。"
+      }
+    }
+  ],
+  "synonyms": ["endure", "carry", "animal"]
+},
+{
+  "word": "issue",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "議題；問題",
+      "example": {
+        "en": "Income inequality is a serious social issue.",
+        "zh": "收入不均是個嚴重的社會問題。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "發行；發布",
+      "example": {
+        "en": "The school issued a warning to students regarding tardiness.",
+        "zh": "學校對學生遲到發出了警告。"
+      }
+    }
+  ],
+  "synonyms": ["topic", "problem", "publish", "announce"]
+},
+{
+  "word": "match",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "比賽；競賽",
+      "example": {
+        "en": "The soccer match ended in a tie.",
+        "zh": "這場足球比賽以平局收場。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "相配的人或物",
+      "example": {
+        "en": "She finally found a perfect match for her personality.",
+        "zh": "她終於找到一個非常合得來的人。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "火柴（一根）",
+        "example": {
+        "en": "He lit a match to start the grill.",
+        "zh": "他用火柴點燃烤架。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "匹配；相配",
+        "example": {
+        "en": "His personality matches her own.",
+        "zh": "他的性格與她相當合拍。"
+      }
+    }
+  ],
+  "synonyms": ["game", "pair", "ignite", "fit"]
+},
+{
+  "word": "produce",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "農產品",
+      "example": {
+        "en": "Local farmers sell fresh produce at the market.",
+        "zh": "當地農民在市場販售新鮮農產品。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "生產；製造",
+      "example": {
+        "en": "This plant produces electricity from solar power.",
+        "zh": "這座工廠利用太陽能生產電力。"
+      }
+    }
+  ],
+  "synonyms": ["crops", "manufacture", "make"]
+},
+{
+  "word": "subject",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "主題；學科",
+      "example": {
+        "en": "History is his favorite subject.",
+        "zh": "歷史是他最喜歡的科目。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "臣民；百姓",
+      "example": {
+        "en": "The king’s subjects obeyed his orders.",
+        "zh": "國王的臣民服從了他的命令。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "使服從；遭受",
+      "example": {
+        "en": "The country was subjected to foreign rule.",
+        "zh": "該國曾遭受外國統治。"
+      }
+    }
+  ],
+  "synonyms": ["topic", "discipline", "citizen", "submit"]
+},
+{
+  "word": "light",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "光線；光源",
+      "example": {
+        "en": "The morning light filled the room.",
+        "zh": "清晨的光線照進了房間。"
+      }
+    },
+    {
+      "pos": "(adj.)",
+      "meaning": "輕的；輕量的",
+        "example": {
+        "en": "This suitcase is surprisingly light.",
+        "zh": "這個行李箱出乎意料地輕。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "點燃；照亮",
+        "example": {
+        "en": "He lit a candle to see in the dark.",
+        "zh": "他點燃了一根蠟燭來照亮黑暗。"
+      }
+    }
+  ],
+  "synonyms": ["brightness", "not heavy", "ignite", "illuminate"]
+},
+{
+  "word": "charge",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "收費；索價",
+        "example": {
+        "en": "The store charges $5 for each item.",
+        "zh": "這家店每件商品收費5美元。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "控告；指控",
+        "example": {
+        "en": "She was charged with trespassing.",
+        "zh": "她因擅闖被控告。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "衝鋒；衝上前",
+      "example": {
+        "en": "The knights charged into battle.",
+        "zh": "騎士們衝向戰場。"
+      }
+    }
+  ],
+  "synonyms": ["fee", "accuse", "rush", "attack"]
+},
+{
+  "word": "raise",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "提高；舉起",
+      "example": {
+        "en": "The company decided to raise wages for its employees.",
+        "zh": "公司決定提高員工薪資。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "提出（問題）；養育",
+      "example": {
+        "en": "She raised an interesting question during the meeting.",
+        "zh": "她在會議中提出了一個有趣的問題。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "額外收入；加薪",
+      "example": {
+        "en": "He got a raise after only six months.",
+        "zh": "他才工作六個月就獲得加薪。"
+      }
+    }
+  ],
+  "synonyms": ["increase", "lift", "propose", "bring up"]
+},
+{
+  "word": "support",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "支持；援助",
+      "example": {
+        "en": "I support your idea of starting community clean-ups.",
+        "zh": "我支持你發起社區清潔的想法。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "支援；贊助",
+      "example": {
+        "en": "They received financial support from the government.",
+        "zh": "他們從政府得到財政支持。"
+      }
+    }
+  ],
+  "synonyms": ["help", "aid", "back", "assist"]
+},
+{
+  "word": "release",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "釋放；放出",
+      "example": {
+        "en": "The authorities released the prisoners after the investigation.",
+        "zh": "調查結束後，當局釋放了囚犯。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "發表；出版",
+      "example": {
+        "en": "The movie studio will release the new film next month.",
+        "zh": "這家電影公司下月將上映新片。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "釋放；發行",
+      "example": {
+        "en": "The release of the new album attracted many fans.",
+        "zh": "這張新專輯的發行吸引了許多粉絲。"
+      }
+    }
+  ],
+  "synonyms": ["free", "publish", "issue", "let go"]
+},
+{
+  "word": "sound",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "聲音",
+      "example": {
+        "en": "I heard a strange sound outside the window.",
+        "zh": "我在窗外聽到奇怪的聲音。"
+      }
+    },
+    {
+      "pos": "(adj.)",
+      "meaning": "健全的；合理的",
+      "example": {
+        "en": "That’s a sound argument.",
+        "zh": "這是一個合理的論點。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "探測水深；測量深度",
+      "example": {
+        "en": "They sounded the depth of the river with a lead line.",
+        "zh": "他們用鉛線測試河流的深度。"
+      }
+    }
+  ],
+  "synonyms": ["noise", "solid", "probe"]
+},
+{
+  "word": "trace",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "痕跡；微量",
+      "example": {
+        "en": "There was no trace of the missing documents.",
+        "zh": "找不到遺失文件的任何痕跡。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "追蹤；描繪輪廓",
+      "example": {
+        "en": "The detective tried to trace the suspect's movements.",
+        "zh": "偵探試圖追蹤嫌疑人的行蹤。"
+      }
+    }
+  ],
+  "synonyms": ["mark", "follow", "outline"]
+},
+{
+  "word": "base",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "基礎；底部",
+      "example": {
+        "en": "The base of the statue was made of marble.",
+        "zh": "雕像的底座是大理石做的。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "以…為基礎；基於",
+      "example": {
+        "en": "The theory is based on recent research.",
+        "zh": "這項理論是基於最新研究提出的。"
+      }
+    },
+    {
+      "pos": "(adj.)",
+      "meaning": "卑賤的；低劣的（較少用）",
+      "example": {
+        "en": "They accused him of base motives.",
+        "zh": "他們指責他動機卑劣。"
+      }
+    }
+  ],
+  "synonyms": ["foundation", "derive", "cheap"]
+},
+{
+  "word": "level",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "水準；程度",
+      "example": {
+        "en": "Her English level is quite high.",
+        "zh": "她的英文水準相當高。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "使…成平面；弄平",
+      "example": {
+        "en": "They leveled the ground for the new building.",
+        "zh": "他們把土地整平以蓋新建築。"
+      }
+    },
+    {
+      "pos": "(adj.)",
+      "meaning": "平的；水平的",
+      "example": {
+        "en": "Make sure the picture is level on the wall.",
+        "zh": "確保牆上的畫是水平的。"
+      }
+    }
+  ],
+  "synonyms": ["standard", "flatten", "even"]
+},
+{
+  "word": "crash",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "撞擊；墜毀",
+      "example": {
+        "en": "The plane crashed during its landing attempt.",
+        "zh": "飛機在著陸嘗試時墜毀了。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "碰撞事故；崩潰",
+      "example": {
+        "en": "There was a crash on the highway this morning.",
+        "zh": "今天早上在高速公路發生了一起撞車事故。"
+      }
+    }
+  ],
+  "synonyms": ["collide", "accident", "fail"]
+},
+{
+  "word": "discharge",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "釋放；允許離開",
+      "example": {
+        "en": "The patient was discharged from the hospital yesterday.",
+        "zh": "病人昨天出院了。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "排出；排放",
+      "example": {
+        "en": "Factories are not allowed to discharge toxic waste into the river.",
+        "zh": "工廠不允許把有毒廢水排入河中。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "排放；釋放物",
+      "example": {
+        "en": "There was a discharge of smoke from the chimney.",
+        "zh": "煙囪冒出了煙霧。"
+      }
+    }
+  ],
+  "synonyms": ["release", "emit", "expel"]
+},
+{
+  "word": "account",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "帳戶；戶頭",
+      "example": {
+        "en": "He opened a new bank account last week.",
+        "zh": "他上週開了一個新的銀行帳戶。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "視為；認為；解釋",
+      "example": {
+        "en": "How do you account for the missing money?",
+        "zh": "你如何解釋那筆失蹤的錢？"
+      }
+    }
+  ],
+  "synonyms": ["bank account", "consider", "explain"]
+},
+{
+  "word": "contract",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "合約；契約",
+      "example": {
+        "en": "They signed a contract before starting the project.",
+        "zh": "他們在開始專案前簽署了一份合約。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "收縮；縮小",
+      "example": {
+        "en": "Metal contracts in cold weather.",
+        "zh": "金屬在寒冷的天氣裡會收縮。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "感染（疾病）",
+      "example": {
+        "en": "He contracted the flu during the trip.",
+        "zh": "他在旅程中感染了流感。"
+      }
+    }
+  ],
+  "synonyms": ["agreement", "shrink", "catch"]
+},
+{
+  "word": "deal",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "交易；協議",
+      "example": {
+        "en": "They made a deal to share the profits.",
+        "zh": "他們達成協議共同分享利潤。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "處理；應對",
+      "example": {
+        "en": "She deals with customer complaints every day.",
+        "zh": "她每天處理顧客的投訴。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "發牌；分發",
+      "example": {
+        "en": "He dealt the cards to each player.",
+        "zh": "他把卡牌發給每個玩家。"
+      }
+    }
+  ],
+  "synonyms": ["transaction", "handle", "distribute"]
+},
+{
+  "word": "lead",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "領導；帶領",
+      "example": {
+        "en": "She will lead the team to victory.",
+        "zh": "她將帶領隊伍取得勝利。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "鉛（化學元素）",
+      "example": {
+        "en": "The pipes are made of lead.",
+        "zh": "這些管道由鉛製成。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "導致；通往",
+      "example": {
+        "en": "This path leads to the village.",
+        "zh": "這條小徑通往那個村莊。"
+      }
+    }
+  ],
+  "synonyms": ["guide", "Pb", "result in"]
+},
+{
+  "word": "park",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "公園",
+      "example": {
+        "en": "They had a picnic in the park.",
+        "zh": "他們在公園裡野餐。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "停車",
+      "example": {
+        "en": "Please park your car in the lot.",
+        "zh": "請把車停在停車場裡。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "坐下；安頓下來（俚語）",
+      "example": {
+        "en": "He parked himself on the couch to watch TV.",
+        "zh": "他坐在沙發上看電視。"
+      }
+    }
+  ],
+  "synonyms": ["playground", "stop", "settle"]
+},
+{
+  "word": "market",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "市場；集市",
+      "example": {
+        "en": "The fresh market opens early in the morning.",
+        "zh": "傳統市場清晨就開市了。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "行銷；推銷",
+      "example": {
+        "en": "They plan to market their new product next month.",
+        "zh": "他們計畫在下月行銷新產品。"
+      }
+    }
+  ],
+  "synonyms": ["bazaar", "promote", "sell"]
+},
+{
+  "word": "issue",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "問題；議題",
+      "example": {
+        "en": "The environmental issue is critical for future generations.",
+        "zh": "環境問題對未來世代至關重要。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "發布；發行",
+      "example": {
+        "en": "The publication will issue the report tomorrow.",
+        "zh": "該出版品將於明天發布報告。"
+      }
+    }
+  ],
+  "synonyms": ["topic", "publish", "release"]
+},
+{
+  "word": "park",
+  "definitions": []
+},
+{
+  "word": "ring",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "打電話",
+      "example": {
+        "en": "I will ring you when I arrive.",
+        "zh": "我到達時會打電話給你。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "環繞；圍住",
+      "example": {
+        "en": "Mountains ring the valley.",
+        "zh": "山峰環繞著這個山谷。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "戒指",
+      "example": {
+        "en": "She wore a diamond ring on her finger.",
+        "zh": "她手指上戴著一枚鑽石戒指。"
+      }
+    }
+  ],
+  "synonyms": ["call", "surround", "jewelry"]
+},
+{
+  "word": "spring",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "泉水；彈簧",
+      "example": {
+        "en": "A natural spring provides fresh water to the village.",
+        "zh": "一股天然泉水為村莊提供清水。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "跳躍；湧出",
+      "example": {
+        "en": "The cat sprang onto the table.",
+        "zh": "貓跳上了桌子。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "春天",
+      "example": {
+        "en": "Flowers bloom in spring.",
+        "zh": "春天花朵盛開。"
+      }
+    }
+  ],
+  "synonyms": ["fountain", "leap", "season"]
+},
+{
+  "word": "strike",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "擊打；打擊",
+      "example": {
+        "en": "He struck the ball with great force.",
+        "zh": "他用很大的力氣打擊了這顆球。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "罷工",
+        "example": {
+        "en": "Workers decided to strike for better pay.",
+        "zh": "工人們決定罷工以要求更好的待遇。"
+      }
+    },
+    {
+      "pos": "(n.)",
+        "meaning": "罷工事件；靈光一現",
+        "example": {
+        "en": "The strike lasted for two weeks.",
+        "zh": "罷工持續了兩週。"
+      }
+    }
+  ],
+  "synonyms": ["hit", "work stoppage", "reflection"]
+},
+{
+  "word": "conduct",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "進行；實施",
+      "example": {
+        "en": "The researchers conducted a survey on students' study habits.",
+        "zh": "研究人員對學生的讀書習慣進行了調查。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "行為；舉止",
+      "example": {
+        "en": "His conduct during the interview impressed the panel.",
+        "zh": "他在面試時的舉止給評審留下好印象。"
+      }
+    }
+  ],
+  "synonyms": ["carry out", "behavior", "lead"]
+},
+{
+  "word": "reserve",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "預訂；保留",
+      "example": {
+        "en": "She reserved two tickets for the concert.",
+        "zh": "她為音樂會預訂了兩張票。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "儲備（物）；保留物",
+      "example": {
+        "en": "The country increased its oil reserves last year.",
+        "zh": "該國去年增加了石油儲備。"
+      }
+    }
+  ],
+  "synonyms": ["book", "save", "stock", "supply"]
+},
+{
+  "word": "scale",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "規模；程度",
+      "example": {
+        "en": "They launched the project on a national scale.",
+        "zh": "他們以全國性的規模啟動該專案。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "攀登（如攀岩）",
+      "example": {
+        "en": "The climbers scaled the steep cliff before dawn.",
+        "zh": "登山者在黎明前攀上了陡峭的懸崖。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "刻度；比例尺；音階（某些情境）",
+      "example": {
+        "en": "Use the scale on the map to measure distances.",
+        "zh": "使用地圖上的比例尺測量距離。"
+      }
+    }
+  ],
+  "synonyms": ["scope", "climb", "ratio", "measure"]
+},
+{
+  "word": "score",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "分數；得分",
+      "example": {
+        "en": "She got a high score on the math test.",
+        "zh": "她在數學考試得了高分。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "得分；獲得（成功、成績等）",
+      "example": {
+        "en": "He scored the winning goal in the last minute.",
+        "zh": "他在最後一分鐘踢進致勝一球。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "（電影或戲劇的）配樂；總譜",
+      "example": {
+        "en": "The film's score was composed by a famous musician.",
+        "zh": "這部電影的配樂由知名音樂家作曲。"
+      }
+    }
+  ],
+  "synonyms": ["points", "achieve", "compose"]
+},
+{
+  "word": "mean",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "意指；表示",
+      "example": {
+        "en": "What does this sign mean?",
+        "zh": "這個標誌表示什麼意思？"
+      }
+    },
+    {
+      "pos": "(adj.)",
+      "meaning": "吝嗇的；刻薄的",
+      "example": {
+        "en": "He's so mean that he never shares his snacks.",
+        "zh": "他很小氣，從不分享零食。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "平均數（math）",
+      "example": {
+        "en": "Find the mean of these five numbers.",
+        "zh": "求這五個數的平均數。"
+      }
+    }
+  ],
+  "synonyms": ["signify", "stingy", "average"]
+},
+{
+  "word": "draw",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "畫（圖）；素描",
+      "example": {
+        "en": "She drew a map of the neighborhood.",
+        "zh": "她畫了一張社區地圖。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "吸引（注意、觀眾等）",
+      "example": {
+        "en": "The festival draws many tourists every year.",
+        "zh": "那個節慶每年吸引許多觀光客。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "平局；和局",
+      "example": {
+        "en": "The game ended in a draw.",
+        "zh": "比賽以平手收場。"
+      }
+    }
+  ],
+  "synonyms": ["sketch", "attract", "tie"]
+},
+{
+  "word": "compound",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "化合物（化學）",
+      "example": {
+        "en": "Water is a compound of hydrogen and oxygen.",
+        "zh": "水是由氫和氧組成的化合物。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "（被圍起的）園區；院落；建築群",
+      "example": {
+        "en": "The embassy is located inside a guarded compound.",
+        "zh": "大使館位於一個受守衛的園區內。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "使加重；使惡化；混合（使合成）",
+      "example": {
+        "en": "Her worries were compounded by the bad news.",
+        "zh": "壞消息讓她的擔心更加嚴重。"
+      }
+    }
+  ],
+  "synonyms": ["mixture", "enclosure", "aggravate", "combine"]
+},
+{
+  "word": "represent",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "代表；代理",
+      "example": {
+        "en": "She represents her company at international meetings.",
+        "zh": "她在國際會議上代表公司。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "象徵；表示",
+      "example": {
+        "en": "The statue represents freedom and unity.",
+        "zh": "這座雕像象徵自由與團結。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "描繪；表現（圖像、描述）",
+      "example": {
+        "en": "The graph represents changes in temperature over time.",
+        "zh": "該圖表顯示溫度隨時間的變化。"
+      }
+    }
+  ],
+  "synonyms": ["stand for", "act for", "symbolize", "depict"]
+},
+{
+  "word": "grant",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "補助金；津貼；授予的資金",
+      "example": {
+        "en": "She received a grant to support her research.",
+        "zh": "她獲得一筆補助金以資助研究。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "給予；准予（權力、許可等）",
+      "example": {
+        "en": "The university granted him a scholarship.",
+        "zh": "大學給予他一項獎學金。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "承認（讓步式用法：I grant that...）",
+      "example": {
+        "en": "I grant that the idea has some flaws, but it could work.",
+        "zh": "我承認這個想法有些缺點，但它還是有可行性。"
+      }
+    }
+  ],
+  "synonyms": ["subsidy", "allow", "admit", "award"]
+},
+{
+  "word": "record",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "紀錄；記載；記錄（文件）",
+      "example": {
+        "en": "The athlete set a new world record.",
+        "zh": "該運動員創下新的世界紀錄。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "記錄；錄製（聲音或影像）",
+      "example": {
+        "en": "They recorded the interview for the archive.",
+        "zh": "他們將訪談錄音存檔。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "（音樂）唱片；專輯",
+      "example": {
+        "en": "Her latest record topped the charts.",
+        "zh": "她最新的專輯登上了排行榜。"
+      }
+    }
+  ],
+  "synonyms": ["document", "log", "register", "album"]
+},
+{
+  "word": "draft",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "草稿；草案",
+      "example": {
+        "en": "He showed his teacher the first draft of his essay.",
+        "zh": "他把作文的第一份草稿拿給老師看。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "徵兵；兵役",
+      "example": {
+        "en": "He was called up in the military draft.",
+        "zh": "他被徵召入伍。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "起草；擬定",
+      "example": {
+        "en": "She drafted a letter of complaint to the company.",
+        "zh": "她擬了一封投訴信給公司。"
+      }
+    }
+  ],
+  "synonyms": ["outline", "sketch", "conscription", "compose"]
+},
+{
+  "word": "current",
+  "definitions": [
+    {
+      "pos": "(adj.)",
+      "meaning": "當前的；現行的",
+      "example": {
+        "en": "Do you know the current price of gold?",
+        "zh": "你知道目前的黃金價格嗎？"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "水流；氣流；電流",
+      "example": {
+        "en": "The boat was carried away by the strong current.",
+        "zh": "小船被強烈的水流沖走了。"
+      }
+    }
+  ],
+  "synonyms": ["present", "modern", "flow", "stream"]
+},
+{
+  "word": "engage",
+  "definitions": [
+    {
+      "pos": "(v.)",
+      "meaning": "參與；從事",
+      "example": {
+        "en": "Students are encouraged to engage in class discussions.",
+        "zh": "鼓勵學生參與課堂討論。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "吸引（注意）",
+      "example": {
+        "en": "The speaker engaged the audience with a story.",
+        "zh": "講者用一個故事吸引了聽眾的注意。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "僱用；聘請",
+      "example": {
+        "en": "The company engaged a lawyer to handle the case.",
+        "zh": "公司聘請了一名律師處理案件。"
+      }
+    }
+  ],
+  "synonyms": ["participate", "involve", "attract", "hire"]
+},
+{
+  "word": "firm",
+  "definitions": [
+    {
+      "pos": "(adj.)",
+      "meaning": "堅定的；穩固的",
+      "example": {
+        "en": "She gave me a firm handshake.",
+        "zh": "她給了我一個有力的握手。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "公司；商號",
+      "example": {
+        "en": "He works for a law firm.",
+        "zh": "他在一家律師事務所工作。"
+      }
+    }
+  ],
+  "synonyms": ["solid", "steady", "company", "business"]
+},
+{
+  "word": "object",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "物體；東西",
+      "example": {
+        "en": "The museum displayed ancient objects.",
+        "zh": "博物館展出了古代物品。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "目標；對象",
+      "example": {
+        "en": "His main object is to win the championship.",
+        "zh": "他的主要目標是贏得冠軍。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "反對；提出異議",
+      "example": {
+        "en": "Many people objected to the new policy.",
+        "zh": "許多人反對這項新政策。"
+      }
+    }
+  ],
+  "synonyms": ["thing", "goal", "target", "oppose", "protest"]
+},
+{
+  "word": "volume",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "音量",
+      "example": {
+        "en": "Can you turn down the volume?",
+        "zh": "你可以把音量調低嗎？"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "容量；體積",
+      "example": {
+        "en": "The container can hold a large volume of water.",
+        "zh": "這容器可以裝下大量的水。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "冊；卷",
+      "example": {
+        "en": "I borrowed the second volume of the novel.",
+        "zh": "我借了這部小說的第二冊。"
+      }
+    }
+  ],
+  "synonyms": ["sound level", "capacity", "book", "tome"]
+},
+{
+  "word": "issue",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "議題；問題",
+      "example": {
+        "en": "They discussed environmental issues.",
+        "zh": "他們討論了環境議題。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "發行；發布",
+      "example": {
+        "en": "The government issued a statement yesterday.",
+        "zh": "政府昨天發布了一份聲明。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "（出版物的）期",
+      "example": {
+        "en": "The latest issue of the magazine is out now.",
+        "zh": "這本雜誌的最新一期已經出版了。"
+      }
+    }
+  ],
+  "synonyms": ["problem", "topic", "release", "edition"]
+},
+{
+  "word": "match",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "比賽；競賽",
+      "example": {
+        "en": "They watched a football match together.",
+        "zh": "他們一起看了一場足球比賽。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "火柴",
+      "example": {
+        "en": "He lit a candle with a match.",
+        "zh": "他用火柴點燃蠟燭。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "相配；匹配",
+      "example": {
+        "en": "Her shoes match her dress perfectly.",
+        "zh": "她的鞋子和裙子完全相配。"
+      }
+    }
+  ],
+  "synonyms": ["game", "contest", "pair", "fit"]
+},
+{
+  "word": "flat",
+  "definitions": [
+    {
+      "pos": "(adj.)",
+      "meaning": "平的；扁平的",
+      "example": {
+        "en": "The land in this area is very flat.",
+        "zh": "這片地區的土地非常平坦。"
+      }
+    },
+    {
+      "pos": "(adj.)",
+      "meaning": "枯燥的；乏味的",
+      "example": {
+        "en": "The performance was flat and uninspiring.",
+        "zh": "這場表演平淡無奇，毫無啟發性。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "公寓",
+      "example": {
+        "en": "They rented a flat in London.",
+        "zh": "他們在倫敦租了一間公寓。"
+      }
+    }
+  ],
+  "synonyms": ["level", "dull", "apartment"]
+},
+{
+  "word": "figure",
+  "definitions": [
+    {
+      "pos": "(n.)",
+      "meaning": "數字",
+      "example": {
+        "en": "The sales figures increased last year.",
+        "zh": "去年的銷售數字上升了。"
+      }
+    },
+    {
+      "pos": "(n.)",
+      "meaning": "人物；身影",
+      "example": {
+        "en": "She saw a tall figure standing by the door.",
+        "zh": "她看到一個高大的身影站在門邊。"
+      }
+    },
+    {
+      "pos": "(v.)",
+      "meaning": "認為；估計",
+        "example": {
+        "en": "I figured it would rain today.",
+        "zh": "我猜今天會下雨。"
+      }
+    }
+  ],
+  "synonyms": ["number", "person", "assume", "estimate"]
+},
+{
   "word": "zeal",
   "definitions": [
     {
@@ -62358,9 +64062,68 @@
         let synthesisVoice = null;
         let favoriteFolders = [new Set(), new Set(), new Set(), new Set(), new Set()];
         let userAddedWordsSet = new Set();
+        let lastSearchTerm = '';
+        let potionPityBonus = 0;
+
+        // --- 資料保存與讀取 (LocalStorage) ---
+        function saveData() {
+            try {
+                const serializableFavorites = favoriteFolders.map(folderSet => [...folderSet]);
+                const serializableUserWords = [...userAddedWordsSet];
+                
+                localStorage.setItem('vocabularyData', JSON.stringify(vocabulary));
+                localStorage.setItem('favoriteFoldersData', JSON.stringify(serializableFavorites));
+                localStorage.setItem('userAddedWordsData', JSON.stringify(serializableUserWords));
+                localStorage.setItem('potionsData', JSON.stringify(potions));
+                localStorage.setItem('potionPityBonus', JSON.stringify(potionPityBonus));
+                console.log('遊戲資料已儲存！');
+            } catch (e) {
+                console.error('儲存資料失敗:', e);
+            }
+        }
+
+        function loadData() {
+            try {
+                const savedVocab = localStorage.getItem('vocabularyData');
+                const savedFavorites = localStorage.getItem('favoriteFoldersData');
+                const savedUserWords = localStorage.getItem('userAddedWordsData');
+                const savedPotions = localStorage.getItem('potionsData');
+                const savedPityBonus = localStorage.getItem('potionPityBonus');
+
+                if (savedVocab) {
+                    vocabulary = JSON.parse(savedVocab);
+                }
+
+                if (savedFavorites) {
+                    const parsedFavorites = JSON.parse(savedFavorites);
+                    favoriteFolders = parsedFavorites.map(folderArray => new Set(folderArray));
+                }
+
+                if (savedUserWords) {
+                    userAddedWordsSet = new Set(JSON.parse(savedUserWords));
+                }
+                
+                if (savedPotions) {
+                    const loadedPotions = JSON.parse(savedPotions);
+                    potions.forEach(p => {
+                        const savedPotion = loadedPotions.find(sp => sp.id === p.id);
+                        if (savedPotion) {
+                            p.unlocked = savedPotion.unlocked;
+                        }
+                    });
+                }
+                if (savedPityBonus) {
+                    potionPityBonus = JSON.parse(savedPityBonus);
+                }
+                console.log('遊戲資料已讀取！');
+            } catch (e) {
+                console.error('讀取資料失敗:', e);
+            }
+        }
 
         // --- 頁面導航 & 彈出視窗 ---
-        function showPage(pageId) {
+        function _displayPage(pageId) {
+            // 這是顯示/隱藏頁面的核心功能，不涉及 history 操作
             document.querySelectorAll('#app > div, .monster-game-screen, #potion-game-wrapper').forEach(page => page.classList.add('hidden'));
             const targetPage = document.getElementById(pageId);
             if (targetPage) targetPage.classList.remove('hidden');
@@ -62377,38 +64140,131 @@
             }
             if (pageId === 'success-page') triggerSuccessPageConfetti();
         }
-        
+
+        function showPage(pageId) {
+            // 這個函式處理使用者導航行為，並更新瀏覽器歷史紀錄
+            const currentPage = window.location.hash.substring(1);
+            if (pageId === currentPage) return; // 如果已經在當前頁面，則不執行任何操作
+
+            _displayPage(pageId);
+
+            const pageTitles = {
+                'home-page': '英文單字隨身GO',
+                'learn-main-page': '選擇學習單元',
+                'learn-minor-page': '選擇小單元',
+                'flashcard-page': '單字卡學習',
+                'favorite-folders-page': '最愛資料夾',
+                'search-results-page': '搜尋結果',
+                'no-results-page': '查無單字',
+                'practice-setup-page': '練習設定',
+                'balloon-game-page': '射氣球遊戲',
+                'monster-setup-page': '怪獸挑戰設定',
+                'monster-game-page': '怪獸挑戰',
+                'monster-win-page': '挑戰成功',
+                'monster-lose-page': '挑戰失敗',
+                'potion-game-wrapper': '魔藥煉製'
+            };
+            const title = pageTitles[pageId] || '英文單字學習';
+            history.pushState({ pageId: pageId }, title, `#${pageId}`);
+            document.title = title;
+        }
+
         function openModal(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
         function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+        
+        function renderSearchResults(words, searchTerm) {
+            lastSearchTerm = searchTerm; // 記住這次的搜尋詞
+            const grid = document.getElementById('search-results-grid');
+            const title = document.querySelector('#search-results-page h2');
+            title.textContent = `"${searchTerm}" 的搜尋結果 (${words.length})`;
+            grid.innerHTML = '';
+
+            if (words.length === 0) {
+                grid.innerHTML = `<p class="text-center text-gray-500 col-span-full mt-8">找不到符合的單字。</p>`;
+                return;
+            }
+
+            words.forEach(wordObj => {
+                const card = document.createElement('button');
+                card.className = 'btn btn-blue text-lg text-center p-4 h-32 flex flex-col justify-center items-center';
+                
+                let meanings = wordObj.definitions.map(def => def.meaning).join(', ');
+                card.innerHTML = `
+                    <span class="text-2xl font-bold block">${wordObj.word}</span>
+                    <span class="text-sm mt-2 text-gray-600 block">${meanings}</span>
+                `;
+                
+                card.onclick = () => {
+                    const wordLocation = findWordLocation(wordObj.word);
+                    if (wordLocation) {
+                        startFlashcardSession(wordLocation.letter, wordLocation.unitNum, wordLocation.index, 'search');
+                    } else {
+                        alert('抱歉，發生錯誤，找不到單字。');
+                    }
+                };
+                grid.appendChild(card);
+            });
+        }
+
 
         // --- 搜尋 & 新增/編輯單字邏輯 ---
-        function searchWord() {
-            const input = document.getElementById('search-input');
-            const searchTerm = input.value.trim().toLowerCase();
-            if (!searchTerm) return;
-
-            const foundWord = vocabulary.find(v => v.word.toLowerCase() === searchTerm);
-            if (foundWord) {
-                const letter = foundWord.word[0].toUpperCase();
-                let unitNum, wordIndex;
-                const units = organizedWords[letter] || {};
-                for (const uNum in units) {
-                    const index = units[uNum].findIndex(w => w.word === foundWord.word);
+        function findWordLocation(wordToFind) {
+            const letter = wordToFind[0].toUpperCase();
+            if (organizedWords[letter]) {
+                for (const unitNum in organizedWords[letter]) {
+                    const index = organizedWords[letter][unitNum].findIndex(w => w.word === wordToFind);
                     if (index !== -1) {
-                        unitNum = uNum;
-                        wordIndex = index;
-                        break;
+                        return { letter: letter, unitNum: unitNum, index: index };
                     }
                 }
-                if (unitNum !== undefined) {
-                    startFlashcardSession(letter, unitNum, wordIndex);
+            }
+            if (organizedWords['+']) {
+                 for (const unitNum in organizedWords['+']) {
+                    const index = organizedWords['+'][unitNum].findIndex(w => w.word === wordToFind);
+                    if (index !== -1) {
+                        return { letter: '+', unitNum: unitNum, index: index };
+                    }
                 }
-            } else {
-                showConfirmModal('無收錄單字', `是否要新增單字 "${searchTerm}" 至資料庫？`, () => openWordForm(null, searchTerm));
+            }
+            return null;
+        }
+
+        function searchWord() {
+            const input = document.getElementById('search-input');
+            const searchTerm = input.value.trim();
+            if (!searchTerm) return;
+
+            const isChinese = /[\u4e00-\u9fa5]/.test(searchTerm);
+
+            if (isChinese) {
+                const matchedWords = vocabulary.filter(wordObj => 
+                    wordObj.definitions.some(def => def.meaning.includes(searchTerm))
+                );
+
+                if (matchedWords.length > 0) {
+                    renderSearchResults(matchedWords, searchTerm);
+                    showPage('search-results-page');
+                } else {
+                    document.getElementById('no-results-term').textContent = searchTerm;
+                    showPage('no-results-page');
+                }
+            } else { // English search
+                const searchTermLower = searchTerm.toLowerCase();
+                const foundWord = vocabulary.find(v => v.word.toLowerCase() === searchTermLower);
+                if (foundWord) {
+                    const wordLocation = findWordLocation(foundWord.word);
+                    if (wordLocation) {
+                        startFlashcardSession(wordLocation.letter, wordLocation.unitNum, wordLocation.index, 'normal');
+                    } else {
+                        alert('找到單字，但無法在單元中定位。');
+                    }
+                } else {
+                    showConfirmModal('無收錄單字', `是否要新增單字 "${searchTerm}" 至資料庫？`, () => openWordForm(null, searchTerm));
+                }
             }
             input.value = '';
         }
-        
+
         function openWordForm(wordData = null, newWord = '') {
             closeModal('confirm-modal');
             const container = document.getElementById('definitions-container');
@@ -62513,7 +64369,7 @@
                 synonyms: synonymsInput.split(',').map(s => s.trim()).filter(Boolean)
             };
         }
-        
+
         function saveNewWord() {
             const wordData = validateAndGetWordFormData();
             if (!wordData) return;
@@ -62527,10 +64383,11 @@
             vocabulary.push(newWord);
             userAddedWordsSet.add(newWord.word);
             organizeAndSortWords();
+            saveData();
             closeModal('word-form-modal');
             searchWordWithValue(newWord.word);
         }
-        
+
         function saveWordChanges(originalWord) {
             const wordData = validateAndGetWordFormData();
             if (!wordData) return;
@@ -62545,6 +64402,7 @@
             vocabulary[wordIndex].synonyms = wordData.synonyms;
             
             organizeAndSortWords();
+            saveData();
             closeModal('word-form-modal');
             displayCard(); // Refresh current card
         }
@@ -62558,24 +64416,17 @@
         function removeDuplicateWords() {
             const seenWords = new Set();
             const uniqueVocabulary = [];
-            // 使用 for...of 迴圈遍歷單字庫
             for (const wordObj of vocabulary) {
-                // 將單字轉換為小寫以進行不區分大小寫的比對
                 const wordKey = wordObj.word.toLowerCase();
-                // 如果這個單字還沒有見過
                 if (!seenWords.has(wordKey)) {
-                    // 就將它加入到 'seen' 集合和新的單字庫中
                     seenWords.add(wordKey);
                     uniqueVocabulary.push(wordObj);
                 }
             }
-            // 計算移除了多少重複的單字
             const removedCount = vocabulary.length - uniqueVocabulary.length;
             if (removedCount > 0) {
-                // 在開發者控制台顯示訊息，方便您確認
                 console.log(`啟動時自動移除了 ${removedCount} 個重複的單字。`);
             }
-            // 用處理過的、無重複的單字庫替換舊的
             vocabulary = uniqueVocabulary;
         }
 
@@ -62600,15 +64451,13 @@
                 }
             });
             
-            // Organize favorite words (all folders combined for the main button)
             const allFavoriteWords = vocabulary.filter(word => favoriteFolders.some(folder => folder.has(word.word)));
             if (allFavoriteWords.length > 0) {
-                 organizedWords['★'] = { 1: allFavoriteWords }; // Simplified for hasWords check
+                 organizedWords['★'] = { 1: allFavoriteWords };
             } else {
                  delete organizedWords['★'];
             }
 
-            // Organize user-added words
             const userWords = vocabulary.filter(word => userAddedWordsSet.has(word.word));
             if (userWords.length > 0) {
                 organizedWords['+'] = {};
@@ -62648,7 +64497,6 @@
                         button.onclick = () => showMinorUnits(unit);
                     }
                 } else {
-                    // Allow clicking on empty '+' unit to see the page
                     if(unit === '+') {
                          button.onclick = () => showMinorUnits(unit);
                          button.disabled = false;
@@ -62660,7 +64508,7 @@
                 grid.appendChild(button);
             });
         }
-        
+
         function showMinorUnits(letter, sessionType = 'normal') {
             const minorUnitGrid = document.getElementById('minor-units-grid');
             minorUnitGrid.innerHTML = '';
@@ -62715,7 +64563,6 @@
             const shuffled = [...vocabulary].sort(() => 0.5 - Math.random());
             const randomWords = shuffled.slice(0, 10);
             
-            // Create a temporary unit for these words
             organizedWords['🎲'] = { 1: randomWords };
             
             startFlashcardSession('🎲', 1, 0, 'random');
@@ -62728,8 +64575,19 @@
             
             const backButton = document.getElementById('back-to-minor-units');
             if (sessionType === 'random') {
+                backButton.innerHTML = '<i class="fa fa-arrow-left mr-2"></i>返回主選單';
                 backButton.onclick = () => showPage('learn-main-page');
+            } else if (sessionType === 'search') {
+                backButton.innerHTML = '<i class="fa fa-arrow-left mr-2"></i>返回搜尋結果';
+                backButton.onclick = () => {
+                    const matchedWords = vocabulary.filter(wordObj => 
+                        wordObj.definitions.some(def => def.meaning.includes(lastSearchTerm))
+                    );
+                    renderSearchResults(matchedWords, lastSearchTerm);
+                    showPage('search-results-page');
+                };
             } else {
+                backButton.innerHTML = '<i class="fa fa-arrow-left mr-2"></i>返回小單元';
                 backButton.onclick = () => showMinorUnits(letter, sessionType);
             }
 
@@ -62767,7 +64625,7 @@
                 const addAllBtn = document.createElement('button');
                 addAllBtn.className = 'btn btn-blue text-sm';
                 addAllBtn.innerHTML = '<i class="fa fa-star mr-2"></i>一鍵加入最愛';
-                addAllBtn.onclick = () => openAddToFavoriteModal(true); // isBatch = true
+                addAllBtn.onclick = () => openAddToFavoriteModal(true);
                 headerRight.appendChild(addAllBtn);
             }
             
@@ -62778,7 +64636,7 @@
                 deleteBtn.classList.add('hidden');
             }
         }
-        
+
         // --- 最愛單字相關 ---
 
         function renderFavoriteFolders() {
@@ -62793,7 +64651,7 @@
                 grid.appendChild(folderButton);
             }
         }
-        
+
         function showFavoriteFolderContents(folderIndex) {
             const folderWords = vocabulary.filter(w => favoriteFolders[folderIndex].has(w.word));
             const tempUnitName = `fav-${folderIndex}`;
@@ -62812,6 +64670,7 @@
             if (isFav) {
                 favoriteFolders.forEach(folder => folder.delete(wordToHandle));
                 organizeAndSortWords();
+                saveData();
                 updateFavoriteButtonState();
             } else {
                 openAddToFavoriteModal(false);
@@ -62834,7 +64693,7 @@
             }
             openModal('add-to-favorite-modal');
         }
-        
+
         function addToFavorite(folderIndex) {
             const wordToAdd = currentWordObject.word;
             if (favoriteFolders[folderIndex].size >= 500) {
@@ -62845,10 +64704,11 @@
             favoriteFolders[folderIndex].add(wordToAdd);
             
             organizeAndSortWords();
+            saveData();
             updateFavoriteButtonState();
             closeModal('add-to-favorite-modal');
         }
-        
+
         function addAllCurrentWordsToFavorite(folderIndex) {
             if (!currentFlashcardUnit || currentFlashcardUnit.length === 0) return;
             
@@ -62858,48 +64718,31 @@
 
             currentFlashcardUnit.forEach(wordObj => {
                 const wordToAdd = wordObj.word;
-                
                 if (favoriteFolders[folderIndex].has(wordToAdd)) {
                     alreadyInFolder++;
                     return; 
                 }
-
-                if (favoriteFolders[folderIndex].size >= 500) {
-                    return; 
-                }
-                
+                if (favoriteFolders[folderIndex].size >= 500) return; 
                 favoriteFolders.forEach((folder, idx) => {
-                    if (idx !== folderIndex) {
-                        folder.delete(wordToAdd);
-                    }
+                    if (idx !== folderIndex) folder.delete(wordToAdd);
                 });
-                
                 favoriteFolders[folderIndex].add(wordToAdd);
                 addedCount++;
             });
             
             let alertMessage = '';
-            if (addedCount > 0) {
-                alertMessage += `成功加入 ${addedCount} 個新單字至資料夾 ${folderIndex + 1}！\n`;
-            }
-            if (alreadyInFolder > 0) {
-                alertMessage += `${alreadyInFolder} 個單字已存在於該資料夾。\n`;
-            }
-            if (addedCount + alreadyInFolder < totalWords) {
-                 alertMessage += `部分單字因資料夾已滿 (上限500) 而未加入。`;
-            }
-            
-            if(alertMessage.trim() === '') {
-                alertMessage = "沒有單字被加入。";
-            }
-
+            if (addedCount > 0) alertMessage += `成功加入 ${addedCount} 個新單字至資料夾 ${folderIndex + 1}！\n`;
+            if (alreadyInFolder > 0) alertMessage += `${alreadyInFolder} 個單字已存在於該資料夾。\n`;
+            if (addedCount + alreadyInFolder < totalWords) alertMessage += `部分單字因資料夾已滿 (上限500) 而未加入。`;
+            if(alertMessage.trim() === '') alertMessage = "沒有單字被加入。";
             alert(alertMessage.trim());
             
             organizeAndSortWords();
+            saveData();
             updateFavoriteButtonState();
             closeModal('add-to-favorite-modal');
         }
-        
+
         function confirmClearSingleFolder(folderIndex) {
             showConfirmModal(`清空資料夾 ${folderIndex + 1}`, '確定要清空此最愛資料夾嗎？此操作無法復原。', () => clearSingleFolder(folderIndex));
         }
@@ -62907,6 +64750,7 @@
         function clearSingleFolder(folderIndex) {
             favoriteFolders[folderIndex].clear();
             organizeAndSortWords();
+            saveData();
             closeModal('confirm-modal');
             showMinorUnits(`fav-${folderIndex}`, `favorite-${folderIndex}`);
         }
@@ -62916,15 +64760,11 @@
             if (!wordData) return;
             const favBtn = document.getElementById('favorite-btn');
             const isFav = favoriteFolders.some(folder => folder.has(wordData.word));
-            if (isFav) {
-                favBtn.classList.add('favorited', 'text-yellow-400');
-                favBtn.classList.remove('text-gray-400');
-            } else {
-                favBtn.classList.remove('favorited', 'text-yellow-400');
-                favBtn.classList.add('text-gray-400');
-            }
+            favBtn.classList.toggle('favorited', isFav);
+            favBtn.classList.toggle('text-yellow-400', isFav);
+            favBtn.classList.toggle('text-gray-400', !isFav);
         }
-        
+
         // --- 刪除單字 ---
         function confirmDeleteWord() {
             const wordToDelete = currentWordObject.word;
@@ -62937,6 +64777,7 @@
             favoriteFolders.forEach(folder => folder.delete(wordToDelete));
             
             organizeAndSortWords();
+            saveData();
             
             currentFlashcardUnit = currentFlashcardUnit.filter(w => w.word !== wordToDelete);
             if (currentCardIndex >= currentFlashcardUnit.length) {
@@ -62971,7 +64812,7 @@
         function initializePracticeSetup() {
             renderUnitSelection();
         }
-        
+
         function openUnitSelectionModal() { openModal('unit-selection-modal'); }
         function confirmUnitSelection() {
             selectedUnits = {};
@@ -62992,7 +64833,7 @@
                 if (isFavorite) {
                     const favWords = vocabulary.filter(w => favoriteFolders.some(f => f.has(w.word)));
                     if (favWords.length > 0) {
-                        unitData = { 1: favWords }; // Group all favs into one selectable block
+                        unitData = { 1: favWords };
                     } else {
                         unitData = null;
                     }
@@ -63088,7 +64929,7 @@
             }
             return wordPool;
         }
-        
+
         function startPractice() {
             practiceSettings.type = document.getElementById('quiz-type').value;
             const wordPool = getWordPool();
@@ -63117,14 +64958,14 @@
                 potionGame.init(wordPool);
             }
         }
-        
+
         function endPractice() {
             if (balloonGameManager.stop) balloonGameManager.stop();
             if (monsterGameManager.stop) monsterGameManager.stop();
             if (window.potionGame && window.potionGame.end) window.potionGame.end();
             showPage('practice-setup-page');
         }
-        
+
         // --- 射氣球遊戲邏輯 ---
         function initBalloonGame(wordPool) {
             const canvas = document.getElementById('balloon-game-canvas');
@@ -63190,18 +65031,17 @@
                         x = Math.random() * (canvas.width - radius * 2) + radius;
 
                         for (const existingBalloon of tempBalloons) {
-                            // 檢查水平重疊，確保氣球之間有間隙
                             if (Math.abs(x - existingBalloon.x) < radius * 2) { 
                                 overlaps = true;
                                 break;
                             }
                         }
                         attempts++;
-                    } while (overlaps && attempts < 100); // 安全機制，避免無限迴圈
+                    } while (overlaps && attempts < 100);
 
                     tempBalloons.push({
                         x: x,
-                        y: canvas.height + radius + Math.random() * 150, // 隨機化起始 Y 座標
+                        y: canvas.height + radius + Math.random() * 150,
                         radius: radius,
                         speed: 1 + Math.random(),
                         text: word,
@@ -63214,10 +65054,29 @@
             function draw() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 state.balloons.forEach(b => {
+                    ctx.strokeStyle = '#555';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(b.x, b.y + b.radius * 0.9);
+                    ctx.quadraticCurveTo(b.x + (Math.sin(b.y / 20) * 10), b.y + b.radius + 30, b.x, b.y + b.radius + 60);
+                    ctx.stroke();
                     ctx.fillStyle = b.color;
                     ctx.beginPath();
-                    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                    ctx.ellipse(b.x, b.y, b.radius * 0.9, b.radius, 0, 0, Math.PI * 2);
                     ctx.fill();
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    ctx.beginPath();
+                    ctx.ellipse(b.x - b.radius * 0.25, b.y - b.radius * 0.3, b.radius * 0.2, b.radius * 0.4, -Math.PI / 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = b.color;
+                    ctx.filter = 'brightness(80%)';
+                    ctx.beginPath();
+                    ctx.moveTo(b.x - b.radius * 0.15, b.y + b.radius * 0.95);
+                    ctx.lineTo(b.x + b.radius * 0.15, b.y + b.radius * 0.95);
+                    ctx.lineTo(b.x, b.y + b.radius * 1.1);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.filter = 'none';
                     ctx.fillStyle = 'black';
                     const fontSize = b.radius * 0.4;
                     ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
@@ -63228,27 +65087,23 @@
             }
 
             function update() {
-                let shouldChangeQuestion = false;
-                for (let b of state.balloons) {
+                for (let i = state.balloons.length - 1; i >= 0; i--) {
+                    const b = state.balloons[i];
                     b.y -= b.speed;
-                    // 如果氣球碰到或超過畫面上緣
                     if (b.y - b.radius <= 0) {
-                        state.score -= 5; // 因錯過氣球而扣分
-                        ui.score.textContent = state.score;
-                        
-                        // 在氣球撞擊的頂部位置觸發爆炸特效
-                        const rect = canvas.getBoundingClientRect();
-                        const screenX = rect.left + (b.x / canvas.width) * rect.width;
-                        const screenY = rect.top;
-                        triggerExplosion(screenX, screenY);
-                        
-                        shouldChangeQuestion = true;
-                        break; // 離開迴圈，立即開始下一題
+                        if (b.text === state.currentQuestion.english) {
+                            state.score -= 5;
+                            ui.score.textContent = state.score;
+                            const rect = canvas.getBoundingClientRect();
+                            const screenX = rect.left + (b.x / canvas.width) * rect.width;
+                            const screenY = rect.top;
+                            triggerExplosion(screenX, screenY);
+                            nextQuestion();
+                            return; 
+                        } else {
+                            state.balloons.splice(i, 1);
+                        }
                     }
-                }
-
-                if (shouldChangeQuestion) {
-                    nextQuestion();
                 }
             }
 
@@ -63320,10 +65175,9 @@
              if (!hide || !show) return;
 
              if(isFromPracticeSetup) {
-                 // For practice setup, we just need to show the monster setup, not hide anything from the main app
                 document.querySelectorAll('#app > div, #success-page, #failure-page').forEach(page => page.classList.add('hidden'));
                 show.classList.remove('hidden');
-                setTimeout(() => show.classList.remove('opacity-0'), 50); // Fade in
+                setTimeout(() => show.classList.remove('opacity-0'), 50);
              } else {
                 hide.classList.add('opacity-0');
                 setTimeout(() => {
@@ -63358,123 +65212,9 @@
                 endGameBtn: document.getElementById('monster-end-game-btn')
             };
             const svgs = {
-                idle: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="furGradient" x1="0.5" y1="0" x2="0.5" y2="1">
-                            <stop offset="0%" stop-color="#a7ddff"/>
-                            <stop offset="65%" stop-color="#a7ddff"/>
-                            <stop offset="100%" stop-color="#c8b6ff"/>
-                        </linearGradient>
-                        <linearGradient id="hornGradient" x1="0.5" y1="0" x2="0.5" y2="1">
-                            <stop offset="0%" stop-color="#e2d6c3"/>
-                            <stop offset="50%" stop-color="#c4b096"/>
-                            <stop offset="100%" stop-color="#a3896f"/>
-                        </linearGradient>
-                        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feDropShadow dx="0" dy="4" stdDeviation="2" flood-color="#000000" flood-opacity="0.2"/>
-                        </filter>
-                    </defs>
-                    <g filter="url(#shadow)">
-                        <!-- Body -->
-                        <path d="M 40 180 C 20 100, 180 100, 160 180 Q 100 200, 40 180 Z" fill="url(#furGradient)" />
-                        <!-- Horns -->
-                        <path d="M 60 70 Q 50 40, 75 40 C 80 50, 70 70, 60 70 Z" fill="url(#hornGradient)"/>
-                        <path d="M 140 70 Q 150 40, 125 40 C 120 50, 130 70, 140 70 Z" fill="url(#hornGradient)"/>
-                        <!-- Stripes on Horns -->
-                        <path d="M 62 65 Q 70 63, 73 58" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <path d="M 68 55 Q 75 53, 78 48" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <path d="M 138 65 Q 130 63, 127 58" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <path d="M 132 55 Q 125 53, 122 48" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <!-- Face -->
-                        <ellipse cx="100" cy="110" rx="35" ry="30" fill="#a7ddff"/>
-                        <circle cx="80" cy="100" r="15" fill="white"/>
-                        <circle cx="120" cy="100" r="15" fill="white"/>
-                        <circle cx="85" cy="100" r="8" fill="#6d28d9"/>
-                        <circle cx="115" cy="100" r="8" fill="#6d28d9"/>
-                        <circle cx="82" cy="97" r="4" fill="white" opacity="0.8"/>
-                        <circle cx="118" cy="97" r="4" fill="white" opacity="0.8"/>
-                        <path d="M 95 125 Q 100 135, 105 125" stroke="#3a3a3a" stroke-width="2" fill="none" stroke-linecap="round"/>
-                        <!-- Nose -->
-                        <ellipse cx="100" cy="115" rx="8" ry="5" fill="#4682B4"/>
-                    </g>
-                </svg>`,
-                hurt: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="furGradientHurt" x1="0.5" y1="0" x2="0.5" y2="1">
-                            <stop offset="0%" stop-color="#a7ddff"/>
-                            <stop offset="65%" stop-color="#a7ddff"/>
-                            <stop offset="100%" stop-color="#c8b6ff"/>
-                        </linearGradient>
-                         <linearGradient id="hornGradientHurt" x1="0.5" y1="0" x2="0.5" y2="1">
-                            <stop offset="0%" stop-color="#e2d6c3"/>
-                            <stop offset="50%" stop-color="#c4b096"/>
-                            <stop offset="100%" stop-color="#a3896f"/>
-                        </linearGradient>
-                    </defs>
-                    <g>
-                        <!-- Body -->
-                        <path d="M 40 180 C 20 100, 180 100, 160 180 Q 100 200, 40 180 Z" fill="url(#furGradientHurt)" />
-                        <!-- Horns -->
-                        <path d="M 60 70 Q 50 40, 75 40 C 80 50, 70 70, 60 70 Z" fill="url(#hornGradientHurt)"/>
-                        <path d="M 140 70 Q 150 40, 125 40 C 120 50, 130 70, 140 70 Z" fill="url(#hornGradientHurt)"/>
-                        <!-- Stripes on Horns -->
-                        <path d="M 62 65 Q 70 63, 73 58" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <path d="M 68 55 Q 75 53, 78 48" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <path d="M 138 65 Q 130 63, 127 58" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <path d="M 132 55 Q 125 53, 122 48" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <!-- Face -->
-                        <ellipse cx="100" cy="110" rx="35" ry="30" fill="#a7ddff"/>
-                        <path d="M 70 95 Q 80 85, 90 95" stroke="#3a3a3a" stroke-width="2" fill="none" stroke-linecap="round"/>
-                        <path d="M 110 95 Q 120 85, 130 95" stroke="#3a3a3a" stroke-width="2" fill="none" stroke-linecap="round"/>
-                        <ellipse cx="100" cy="130" rx="15" ry="10" fill="#B22222"/>
-                        <ellipse cx="100" cy="132" rx="12" ry="7" fill="#FF6347"/>
-                         <!-- Nose -->
-                        <ellipse cx="100" cy="110" rx="8" ry="5" fill="#4682B4"/>
-                        <!-- Hands -->
-                        <path d="M 60 120 C 40 100, 70 80, 80 90" fill="url(#furGradientHurt)" stroke="#3a3a3a" stroke-width="1"/>
-                        <path d="M 140 120 C 160 100, 130 80, 120 90" fill="url(#furGradientHurt)" stroke="#3a3a3a" stroke-width="1"/>
-                    </g>
-                </svg>`,
-                happy: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                     <defs>
-                        <linearGradient id="furGradientHappy" x1="0.5" y1="0" x2="0.5" y2="1">
-                            <stop offset="0%" stop-color="#a7ddff"/>
-                            <stop offset="65%" stop-color="#a7ddff"/>
-                            <stop offset="100%" stop-color="#c8b6ff"/>
-                        </linearGradient>
-                         <linearGradient id="hornGradientHappy" x1="0.5" y1="0" x2="0.5" y2="1">
-                            <stop offset="0%" stop-color="#e2d6c3"/>
-                            <stop offset="50%" stop-color="#c4b096"/>
-                            <stop offset="100%" stop-color="#a3896f"/>
-                        </linearGradient>
-                    </defs>
-                    <g>
-                        <!-- Body -->
-                        <path d="M 40 180 C 20 100, 180 100, 160 180 Q 100 200, 40 180 Z" fill="url(#furGradientHappy)" />
-                        <!-- Horns -->
-                        <path d="M 60 70 Q 50 40, 75 40 C 80 50, 70 70, 60 70 Z" fill="url(#hornGradientHappy)"/>
-                        <path d="M 140 70 Q 150 40, 125 40 C 120 50, 130 70, 140 70 Z" fill="url(#hornGradientHappy)"/>
-                        <!-- Stripes on Horns -->
-                        <path d="M 62 65 Q 70 63, 73 58" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <path d="M 68 55 Q 75 53, 78 48" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <path d="M 138 65 Q 130 63, 127 58" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <path d="M 132 55 Q 125 53, 122 48" stroke="#5d493a" stroke-width="2" fill="none"/>
-                        <!-- Face -->
-                        <ellipse cx="100" cy="110" rx="35" ry="30" fill="#a7ddff"/>
-                        <circle cx="80" cy="100" r="15" fill="white"/>
-                        <circle cx="120" cy="100" r="15" fill="white"/>
-                        <circle cx="85" cy="100" r="8" fill="#6d28d9"/>
-                        <circle cx="115" cy="100" r="8" fill="#6d28d9"/>
-                        <circle cx="82" cy="97" r="4" fill="white" opacity="0.8"/>
-                        <circle cx="118" cy="97" r="4" fill="white" opacity="0.8"/>
-                        <path d="M 85 120 Q 100 140, 115 120" stroke="#3a3a3a" stroke-width="2" fill="none" stroke-linecap="round"/>
-                        <!-- Nose -->
-                        <ellipse cx="100" cy="115" rx="8" ry="5" fill="#4682B4"/>
-                         <!-- Hands -->
-                        <path d="M 60 140 C 40 120, 60 80, 70 90" fill="url(#furGradientHappy)" stroke="#3a3a3a" stroke-width="1"/>
-                        <path d="M 140 140 C 160 120, 140 80, 130 90" fill="url(#furGradientHappy)" stroke="#3a3a3a" stroke-width="1"/>
-                    </g>
-                </svg>`
+                idle: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><g><path d="M135.2,8.8c-7.2-2-14.6,0.3-20.1,5.8l-12,12l-12.8,12.8c-8.8,8.8-9.6,22.7-2,30.4l14.1,14.1 c7.7,7.7,21.6,6.8,30.4-2l12.8-12.8l12-12c5.5-5.5,7.8-12.9,5.8-20.1L135.2,8.8z" fill="#A0522D"/><circle cx="118" cy="27" r="5" fill="#8B4513"/><circle cx="150" cy="50" r="5" fill="#8B4513"/><circle cx="130" cy="65" r="5" fill="#8B4513"/><path d="M125,100 C140,80 130,50 120,45" stroke="#68D391" stroke-width="18" fill="none" stroke-linecap="round"/><path d="M50,190 C20,100, 180,100, 150,190 Z" fill="#48BB78"/><path d="M70,120 C40,70 160,70 130,120 L70,120 Z" fill="#48BB78"/><path d="M60,80 L40,40 L70,70 Z" fill="#68D391"/><path d="M140,80 L160,40 L130,70 Z" fill="#68D391"/><circle cx="80" cy="95" r="8" fill="#FEE2E2"/><circle cx="120" cy="95" r="8" fill="#FEE2E2"/><path d="M90,115 C95,110 105,110 110,115" stroke="#4A5568" stroke-width="3" fill="none"/><path d="M85,115 v5" stroke="#4A5568" stroke-width="3" stroke-linecap="round"/><path d="M115,115 v5" stroke="#4A5568" stroke-width="3" stroke-linecap="round"/></g></svg>`,
+                hurt: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><g><path d="M135.2,8.8c-7.2-2-14.6,0.3-20.1,5.8l-12,12l-12.8,12.8c-8.8,8.8-9.6,22.7-2,30.4l14.1,14.1 c7.7,7.7,21.6,6.8,30.4-2l12.8-12.8l12-12c5.5-5.5,7.8-12.9,5.8-20.1L135.2,8.8z" fill="#A0522D"/><circle cx="118" cy="27" r="5" fill="#8B4513"/><circle cx="150" cy="50" r="5" fill="#8B4513"/><circle cx="130" cy="65" r="5" fill="#8B4513"/><path d="M125,100 C140,80 130,50 120,45" stroke="#68D391" stroke-width="18" fill="none" stroke-linecap="round"/><path d="M50,190 C20,100, 180,100, 150,190 Z" fill="#48BB78"/><path d="M70,120 C40,70 160,70 130,120 L70,120 Z" fill="#48BB78"/><path d="M60,80 L40,40 L70,70 Z" fill="#68D391"/><path d="M140,80 L160,40 L130,70 Z" fill="#68D391"/><path d="M72 88 L88 102 M88 88 L72 102" stroke="#4A5568" stroke-width="4" stroke-linecap="round"/><path d="M112 88 L128 102 M128 88 L112 102" stroke="#4A5568" stroke-width="4" stroke-linecap="round"/><path d="M90,120 Q100,110 110,120" stroke="#4A5568" stroke-width="3" fill="none" stroke-linecap="round"/></g></svg>`,
+                happy: `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><g><path d="M135.2,8.8c-7.2-2-14.6,0.3-20.1,5.8l-12,12l-12.8,12.8c-8.8,8.8-9.6,22.7-2,30.4l14.1,14.1 c7.7,7.7,21.6,6.8,30.4-2l12.8-12.8l12-12c5.5-5.5,7.8-12.9,5.8-20.1L135.2,8.8z" fill="#A0522D"/><circle cx="118" cy="27" r="5" fill="#8B4513"/><circle cx="150" cy="50" r="5" fill="#8B4513"/><circle cx="130" cy="65" r="5" fill="#8B4513"/><path d="M125,100 C140,80 130,50 120,45" stroke="#68D391" stroke-width="18" fill="none" stroke-linecap="round"/><path d="M50,190 C20,100, 180,100, 150,190 Z" fill="#48BB78"/><path d="M70,120 C40,70 160,70 130,120 L70,120 Z" fill="#48BB78"/><path d="M60,80 L40,40 L70,70 Z" fill="#68D391"/><path d="M140,80 L160,40 L130,70 Z" fill="#68D391"/><path d="M75 90 C 80 80, 90 80, 95 90" stroke="#4A5568" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M105 90 C 110 80, 120 80, 125 90" stroke="#4A5568" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M85,110 Q100,130 115,110" fill="#4A5568"/></g></svg>`
             };
             let state = {
                 wordPool: [],
@@ -63563,19 +65303,26 @@
                 dom.answerInput.disabled = true;
                 dom.skipBtn.disabled = true;
                 dom.endGameBtn.disabled = true;
+
+                // 顯示正確答案 (紅色文字)
+                dom.feedback.textContent = `正確答案是: ${state.currentWord.word}`;
+                
                 state.currentHP = Math.min(state.maxHP, state.currentHP + Math.floor(Math.random() * 6) + 5);
                 updateHPDisplay();
                 stopIdleAnimation();
                 dom.monsterDisplay.innerHTML = svgs.happy;
+                
+                // 延長計時器讓使用者有時間看到答案
                 setTimeout(() => {
                     dom.monsterDisplay.innerHTML = svgs.idle;
                     startIdleAnimation();
-                    nextWord();
+                    nextWord(); // 這個函式會清除 feedback 文字
+
                     dom.answerInput.disabled = false;
                     dom.skipBtn.disabled = false;
                     dom.endGameBtn.disabled = false;
                     dom.answerInput.focus();
-                }, 1200);
+                }, 2000); // 2 秒鐘看答案
             }
 
             function updateHPDisplay() {
@@ -63668,12 +65415,13 @@
                 collectionBtn: document.getElementById('potion-collection-btn'),
                 collectionGrid: document.getElementById('potion-collection-grid'),
                 collectionBackBtn: document.getElementById('potion-collection-back-btn'),
-                backToMenuBtn: document.getElementById('potion-back-to-menu-btn')
+                backToMenuBtn: document.getElementById('potion-back-to-menu-btn'),
+                errorToast: document.getElementById('potion-error-toast')
             };
 
             let state = {
                 wordPool: [],
-                currentDifficulty: 'easy',
+                currentDifficulty: 'trainee',
                 wordPairs: [],
                 mistakes: 0,
                 pairsLeft: 0,
@@ -63684,105 +65432,139 @@
             };
             
              const potions = [
-                // --- 初級 (Easy) ---
-                // 3 Stars
-                { id: 101, name: "閃亮星星糖漿", desc: "讓你的思路像星星一樣清晰閃亮。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 3, timeRange: [0, 15] } },
-                { id: 102, name: "快樂氣泡飲", desc: "喝下後會忍不住微笑一整天。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 3, timeRange: [16, 25] } },
-                { id: 103, name: "順風耳滴劑", desc: "能稍微聽得更清楚一些。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 3, timeRange: [26, 35] } },
-                { id: 104, name: "活力泉水", desc: "感覺精神飽滿，充滿能量。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 3, timeRange: [36, 45] } },
-                { id: 105, name: "好眠牛奶", desc: "讓你做個關於單字的美夢。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 3, timeRange: [46, 9999] } },
-                // 2 Stars
-                { id: 106, name: "微光藥水", desc: "指尖會發出微弱的光芒。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 2, timeRange: [0, 15] } },
-                { id: 107, name: "變色墨水", desc: "寫出來的字會隨心情改變顏色。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 2, timeRange: [16, 25] } },
-                { id: 108, name: "誠實豆", desc: "吃下後短時間內無法說謊。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 2, timeRange: [26, 35] } },
-                { id: 109, name: "溫暖圍巾", desc: "感覺像是被一個溫暖的擁抱包圍。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 2, timeRange: [36, 45] } },
-                { id: 110, name: "普通的水", desc: "呃...它嚐起來就像普通的水。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 2, timeRange: [46, 9999] } },
-                // 1 Star
-                { id: 111, name: "健忘糖果", desc: "讓你忘記一件不重要的小事。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 1, timeRange: [0, 15] } },
-                { id: 112, name: "哈啾胡椒粉", desc: "聞一下就會打個大噴嚏。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 1, timeRange: [16, 25] } },
-                { id: 113, name: "悲傷洋蔥汁", desc: "為什麼我的眼淚流不停...", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 1, timeRange: [26, 35] } },
-                { id: 114, name: "慢動作糖漿", desc: "接下來的五分鐘，你的動作會變慢。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 1, timeRange: [36, 45] } },
-                { id: 115, name: "漏水的杯子", desc: "魔藥從杯底漏光了，真可惜。", unlocked: false, unlockConditions: { difficulty: 'easy', stars: 1, timeRange: [46, 9999] } },
+                // --- 見習學員 (3題) ---
+                { id: 101, name: "閃亮星星糖漿", desc: "讓你的思路像星星一樣清晰閃亮。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 3, timeRange: [0, 15] } },
+                { id: 102, name: "快樂氣泡飲", desc: "喝下後會忍不住微笑一整天。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 3, timeRange: [16, 25] } },
+                { id: 103, name: "順風耳滴劑", desc: "能稍微聽得更清楚一些。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 3, timeRange: [26, 35] } },
+                { id: 104, name: "活力泉水", desc: "感覺精神飽滿，充滿能量。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 3, timeRange: [36, 45] } },
+                { id: 105, name: "好眠牛奶", desc: "讓你做個關於單字的美夢。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 3, timeRange: [46, 9999] } },
+                { id: 106, name: "微光藥水", desc: "指尖會發出微弱的光芒。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 2, timeRange: [0, 15] } },
+                { id: 107, name: "變色墨水", desc: "寫出來的字會隨心情改變顏色。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 2, timeRange: [16, 25] } },
+                { id: 108, name: "誠實豆", desc: "吃下後短時間內無法說謊。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 2, timeRange: [26, 35] } },
+                { id: 109, name: "溫暖圍巾", desc: "感覺像是被一個溫暖的擁抱包圍。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 2, timeRange: [36, 45] } },
+                { id: 110, name: "普通的水", desc: "呃...它嚐起來就像普通的水。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 2, timeRange: [46, 9999] } },
+                { id: 111, name: "健忘糖果", desc: "讓你忘記一件不重要的小事。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 1, timeRange: [0, 15] } },
+                { id: 112, name: "哈啾胡椒粉", desc: "聞一下就會打個大噴嚏。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 1, timeRange: [16, 25] } },
+                { id: 113, name: "悲傷洋蔥汁", desc: "為什麼我的眼淚流不停...", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 1, timeRange: [26, 35] } },
+                { id: 114, name: "慢動作糖漿", desc: "接下來的五分鐘，你的動作會變慢。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 1, timeRange: [36, 45] } },
+                { id: 115, name: "漏水的杯子", desc: "魔藥從杯底漏光了，真可惜。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 1, timeRange: [46, 9999] } },
+                { id: 121, name: "飛高高藥水 (實驗品)", desc: "喝下後，你的身體會不受控制地向上飄...直到撞到天花板。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 0, timeRange: [0, 15] } },
+                { id: 122, name: "誠實豆 (超強效版)", desc: "不僅無法說謊，還會把你所有尷尬的秘密都說出來。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 0, timeRange: [16, 25] } },
+                { id: 123, name: "靜電產生器", desc: "你變成了一個行走的人形靜電產生器，碰什麼都觸電。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 0, timeRange: [26, 35] } },
+                { id: 124, name: "絕對路痴藥劑", desc: "即使在家裡，你也找不到廁所。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 0, timeRange: [36, 45] } },
+                { id: 125, name: "漏光的鍋子", desc: "魔藥在煉製過程中就漏光了，只剩下一些奇怪的殘渣。", unlocked: false, unlockConditions: { difficulty: 'trainee', stars: 0, timeRange: [46, 9999] } },
                 
-                // --- 中級 (Medium) ---
-                // 3 Stars
-                { id: 201, name: "天才叡智藥劑", desc: "短時間內大幅提升理解與記憶能力。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 3, timeRange: [0, 30] } },
-                { id: 202, name: "專注糖漿", desc: "幫助你長時間集中精神，不受外界干擾。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 3, timeRange: [31, 45] } },
-                { id: 203, name: "巧言鳥鳴劑", desc: "說話變得像唱歌一樣悅耳動聽。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 3, timeRange: [46, 60] } },
-                { id: 204, name: "植物溝通露", desc: "你可以聽懂路邊小草的竊竊私語。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 3, timeRange: [61, 75] } },
-                { id: 205, name: "穩重之石", desc: "讓你的心情平靜下來，不易浮躁。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 3, timeRange: [76, 9999] } },
-                // 2 Stars
-                { id: 206, name: "記憶麵包屑", desc: "吃下後能回想起昨天早餐吃了什麼。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 2, timeRange: [0, 30] } },
-                { id: 207, name: "勇氣軟糖", desc: "給你舉手發問的勇氣。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 2, timeRange: [31, 45] } },
-                { id: 208, name: "反重力髮膠", desc: "你的頭髮會直直地朝向天空。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 2, timeRange: [46, 60] } },
-                { id: 209, name: "小幸運汽水", desc: "今天可能會在路上撿到一枚硬幣。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 2, timeRange: [61, 75] } },
-                { id: 210, name: "平淡無奇湯", desc: "味道不差，但也沒有什麼特別之處。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 2, timeRange: [76, 9999] } },
-                // 1 Star
-                { id: 211, name: "舌頭打結藥水", desc: "讓你暫時說話口齒不清。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 1, timeRange: [0, 30] } },
-                { id: 212, name: "尷尬紅暈霜", desc: "臉頰會不由自主地變紅。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 1, timeRange: [31, 45] } },
-                { id: 213, name: "磁力干擾劑", desc: "你身邊的湯匙和叉子會輕微顫抖。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 1, timeRange: [46, 60] } },
-                { id: 214, name: "易怒辣椒油", desc: "喝下後，一點小事就可能讓你生氣。", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 1, timeRange: [61, 75] } },
-                { id: 215, name: "煮沸的泥水", desc: "看起來不太能喝的樣子...", unlocked: false, unlockConditions: { difficulty: 'medium', stars: 1, timeRange: [76, 9999] } },
+                // --- 新手巫師 (5題) ---
+                { id: 201, name: "天才叡智藥劑", desc: "短時間內大幅提升理解與記憶能力。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 3, timeRange: [0, 30] } },
+                { id: 202, name: "專注糖漿", desc: "幫助你長時間集中精神，不受外界干擾。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 3, timeRange: [31, 45] } },
+                { id: 203, name: "巧言鳥鳴劑", desc: "說話變得像唱歌一樣悅耳動聽。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 3, timeRange: [46, 60] } },
+                { id: 204, name: "植物溝通露", desc: "你可以聽懂路邊小草的竊竊私語。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 3, timeRange: [61, 75] } },
+                { id: 205, name: "穩重之石", desc: "讓你的心情平靜下來，不易浮躁。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 3, timeRange: [76, 9999] } },
+                { id: 206, name: "記憶麵包屑", desc: "吃下後能回想起昨天早餐吃了什麼。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 2, timeRange: [0, 30] } },
+                { id: 207, name: "勇氣軟糖", desc: "給你舉手發問的勇氣。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 2, timeRange: [31, 45] } },
+                { id: 208, name: "反重力髮膠", desc: "你的頭髮會直直地朝向天空。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 2, timeRange: [46, 60] } },
+                { id: 209, name: "小幸運汽水", desc: "今天可能會在路上撿到一枚硬幣。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 2, timeRange: [61, 75] } },
+                { id: 210, name: "平淡無奇湯", desc: "味道不差，但也沒有什麼特別之處。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 2, timeRange: [76, 9999] } },
+                { id: 211, name: "舌頭打結藥水", desc: "讓你暫時說話口齒不清。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 1, timeRange: [0, 30] } },
+                { id: 212, name: "尷尬紅暈霜", desc: "臉頰會不由自主地變紅。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 1, timeRange: [31, 45] } },
+                { id: 213, name: "磁力干擾劑", desc: "你身邊的湯匙和叉子會輕微顫抖。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 1, timeRange: [46, 60] } },
+                { id: 214, name: "易怒辣椒油", desc: "喝下後，一點小事就可能讓你生氣。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 1, timeRange: [61, 75] } },
+                { id: 215, name: "煮沸的泥水", desc: "看起來不太能喝的樣子...", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 1, timeRange: [76, 9999] } },
+                { id: 221, name: "反向思維糖漿", desc: "你想往左，身體就往右。你想說'是'，嘴巴就說'否'。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 0, timeRange: [0, 30] } },
+                { id: 222, name: "萬物黏著劑", desc: "你的手掌變得極度黏稠，所有東西拿起來就放不下了。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 0, timeRange: [31, 45] } },
+                { id: 223, name: "存在感稀釋液", desc: "人們會下意識忽略你，甚至會直接從你身體穿過去。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 0, timeRange: [46, 60] } },
+                { id: 224, name: "個人專屬雨雲", desc: "一朵小烏雲會一直跟在你頭上，並且只對你下雨。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 0, timeRange: [61, 75] } },
+                { id: 225, name: "爆炸性失敗", desc: "藥鍋發出巨響，把你炸得灰頭土臉，什麼也沒剩下。", unlocked: false, unlockConditions: { difficulty: 'novice', stars: 0, timeRange: [76, 9999] } },
                 
-                // --- 高級 (Hard) ---
-                // 3 Stars
-                { id: 301, name: "語言通曉藥劑", desc: "一個小時內，你能聽懂並說出任何一種語言。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 3, timeRange: [0, 50] } },
-                { id: 302, name: "靈感之泉", desc: "文思泉湧，創意不斷！非常適合寫作和藝術創作。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 3, timeRange: [51, 70] } },
-                { id: 303, name: "鷹眼精華", desc: "你的視力會變得像老鷹一樣敏銳。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 3, timeRange: [71, 90] } },
-                { id: 304, name: "福靈劑", desc: "在接下來的一段時間裡，你會事事順利。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 3, timeRange: [91, 120] } },
-                { id: 305, name: "貓之敏捷", desc: "你的動作變得像貓一樣輕盈敏捷。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 3, timeRange: [121, 9999] } },
-                // 2 Stars
-                { id: 306, name: "夢境漫遊劑", desc: "今晚你可以控制自己的夢境。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 2, timeRange: [0, 50] } },
-                { id: 307, name: "回聲糖漿", desc: "你說的每句話都會延遲一秒後重複一次。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 2, timeRange: [51, 70] } },
-                { id: 308, name: "氣味幻象劑", desc: "你可以讓周圍的人聞到任何你想像的味道。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 2, timeRange: [71, 90] } },
-                { id: 309, name: "短暫隱形噴霧", desc: "可以隱形十秒鐘，時間一到就會現形。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 2, timeRange: [91, 120] } },
-                { id: 310, name: "變調藥水", desc: "你的聲音音調會隨機忽高忽低。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 2, timeRange: [121, 9999] } },
-                // 1 Star
-                { id: 311, name: "黏呼呼之觸", desc: "你碰到的所有東西都會變得有點黏。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 1, timeRange: [0, 50] } },
-                { id: 312, name: "增髮藥劑(副作用)", desc: "頭髮長得很快，但眉毛和鼻毛也一樣。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 1, timeRange: [51, 70] } },
-                { id: 313, name: "色彩失真鏡片", desc: "你眼中的世界暫時失去了所有色彩。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 1, timeRange: [71, 90] } },
-                { id: 314, name: "無感藥劑", desc: "暫時嚐不出任何食物的味道。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 1, timeRange: [91, 120] } },
-                { id: 315, name: "爆炸失敗的藥渣", desc: "發出一聲悶響和一縷黑煙，什麼也沒發生。", unlocked: false, unlockConditions: { difficulty: 'hard', stars: 1, timeRange: [121, 9999] } },
+                // --- 普通法師 (8題) ---
+                { id: 301, name: "語言通曉藥劑", desc: "一個小時內，你能聽懂並說出任何一種語言。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 3, timeRange: [0, 50] } },
+                { id: 302, name: "靈感之泉", desc: "文思泉湧，創意不斷！非常適合寫作和藝術創作。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 3, timeRange: [51, 70] } },
+                { id: 303, name: "鷹眼精華", desc: "你的視力會變得像老鷹一樣敏銳。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 3, timeRange: [71, 90] } },
+                { id: 304, name: "福靈劑", desc: "在接下來的一段時間裡，你會事事順利。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 3, timeRange: [91, 120] } },
+                { id: 305, name: "貓之敏捷", desc: "你的動作變得像貓一樣輕盈敏捷。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 3, timeRange: [121, 9999] } },
+                { id: 306, name: "夢境漫遊劑", desc: "今晚你可以控制自己的夢境。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 2, timeRange: [0, 50] } },
+                { id: 307, name: "回聲糖漿", desc: "你說的每句話都會延遲一秒後重複一次。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 2, timeRange: [51, 70] } },
+                { id: 308, name: "氣味幻象劑", desc: "你可以讓周圍的人聞到任何你想像的味道。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 2, timeRange: [71, 90] } },
+                { id: 309, name: "短暫隱形噴霧", desc: "可以隱形十秒鐘，時間一到就會現形。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 2, timeRange: [91, 120] } },
+                { id: 310, name: "變調藥水", desc: "你的聲音音調會隨機忽高忽低。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 2, timeRange: [121, 9999] } },
+                { id: 311, name: "黏呼呼之觸", desc: "你碰到的所有東西都會變得有點黏。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 1, timeRange: [0, 50] } },
+                { id: 312, name: "增髮藥劑(副作用)", desc: "頭髮長得很快，但眉毛和鼻毛也一樣。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 1, timeRange: [51, 70] } },
+                { id: 313, name: "色彩失真鏡片", desc: "你眼中的世界暫時失去了所有色彩。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 1, timeRange: [71, 90] } },
+                { id: 314, name: "無感藥劑", desc: "暫時嚐不出任何食物的味道。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 1, timeRange: [91, 120] } },
+                { id: 315, name: "爆炸失敗的藥渣", desc: "發出一聲悶響和一縷黑煙，什麼也沒發生。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 1, timeRange: [121, 9999] } },
+                { id: 321, name: "動物語言(副作用版)", desc: "你聽得懂動物說話，但牠們都在嘲笑你的髮型。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 0, timeRange: [0, 50] } },
+                { id: 322, name: "無重力藥水", desc: "你和周遭的所有物品都開始漂浮在空中，場面一片混亂。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 0, timeRange: [51, 70] } },
+                { id: 323, name: "性別轉換劑(不穩定)", desc: "你的性別每五分鐘變換一次，持續一整天。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 0, timeRange: [71, 90] } },
+                { id: 324, name: "絕對霉運藥劑", desc: "走路會平地摔，喝水會嗆到，出門會被鳥屎滴到。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 0, timeRange: [91, 120] } },
+                { id: 325, name: "煉金術的背叛", desc: "你試圖點石成金，結果把金幣變成了石頭。", unlocked: false, unlockConditions: { difficulty: 'mage', stars: 0, timeRange: [121, 9999] } },
 
-                // --- 終極 (Ultimate) ---
-                // 3 Stars
-                { id: 401, name: "智慧賢者之釀", desc: "傳說中的魔藥，能讓你窺見知識的真理。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 3, timeRange: [0, 60] } },
-                { id: 402, name: "時間旅人沙漏", desc: "可以讓時間暫停五秒鐘。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 3, timeRange: [61, 90] } },
-                { id: 403, name: "元素親和劑", desc: "讓你能夠與風、水、火、土進行簡單的交流。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 3, timeRange: [91, 120] } },
-                { id: 404, name: "萬物變形水", desc: "可以將一塊石頭變成一塊麵包，或是一隻蝴蝶。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 3, timeRange: [121, 160] } },
-                { id: 405, name: "守護者星塵", desc: "一道溫和的光芒環繞著你，為你抵擋一次小小的厄運。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 3, timeRange: [161, 9999] } },
-                // 2 Stars
-                { id: 406, name: "心靈感應露水", desc: "可以模糊地感應到周遭人的情緒。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 2, timeRange: [0, 60] } },
-                { id: 407, name: "魅影步伐", desc: "走路時完全不會發出聲音。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 2, timeRange: [61, 90] } },
-                { id: 408, name: "雙倍生長劑", desc: "澆在植物上，它的大小會變成兩倍。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 2, timeRange: [91, 120] } },
-                { id: 409, name: "天氣預報糖", desc: "嚐起來的味道會預示明天的天氣，酸是下雨，甜是晴天。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 2, timeRange: [121, 160] } },
-                { id: 410, name: "永恆泡沫", desc: "吹出來的泡泡永遠不會破掉。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 2, timeRange: [161, 9999] } },
-                // 1 Star
-                { id: 411, name: "萬能鑰匙(仿)", desc: "看起來像萬能鑰匙，但其實什麼鎖都打不開。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 1, timeRange: [0, 60] } },
-                { id: 412, name: "引力逆轉劑(微量)", desc: "你的頭髮會飄起來，僅此而已。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 1, timeRange: [61, 90] } },
-                { id: 413, name: "縮小藥水(不穩定)", desc: "你的小指頭縮小了一半，幾分鐘後又變回來了。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 1, timeRange: [91, 120] } },
-                { id: 414, "name": "遺忘之霧", "desc": "呃...我剛剛想說什麼來著？", "unlocked": false, "unlockConditions": { "difficulty": "ultimate", "stars": 1, "timeRange": [121, 160] } },
-                { id: 415, name: "一鍋混沌", desc: "所有材料胡亂地混在一起，發出奇怪的顏色和氣味。", unlocked: false, unlockConditions: { difficulty: 'ultimate', stars: 1, timeRange: [161, 9999] } }
+                // --- 有點厲害煉藥師 (10題) ---
+                { id: 401, name: "智慧賢者之釀", desc: "傳說中的魔藥，能讓你窺見知識的真理。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 3, timeRange: [0, 60] } },
+                { id: 402, name: "時間旅人沙漏", desc: "可以讓時間暫停五秒鐘。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 3, timeRange: [61, 90] } },
+                { id: 403, name: "元素親和劑", desc: "讓你能夠與風、水、火、土進行簡單的交流。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 3, timeRange: [91, 120] } },
+                { id: 404, name: "萬物變形水", desc: "可以將一塊石頭變成一塊麵包，或是一隻蝴蝶。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 3, timeRange: [121, 160] } },
+                { id: 405, name: "守護者星塵", desc: "一道溫和的光芒環繞著你，為你抵擋一次小小的厄運。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 3, timeRange: [161, 9999] } },
+                { id: 406, name: "心靈感應露水", desc: "可以模糊地感應到周遭人的情緒。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 2, timeRange: [0, 60] } },
+                { id: 407, name: "魅影步伐", desc: "走路時完全不會發出聲音。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 2, timeRange: [61, 90] } },
+                { id: 408, name: "雙倍生長劑", desc: "澆在植物上，它的大小會變成兩倍。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 2, timeRange: [91, 120] } },
+                { id: 409, name: "天氣預報糖", desc: "嚐起來的味道會預示明天的天氣，酸是下雨，甜是晴天。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 2, timeRange: [121, 160] } },
+                { id: 410, name: "永恆泡沫", desc: "吹出來的泡泡永遠不會破掉。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 2, timeRange: [161, 9999] } },
+                { id: 411, name: "萬能鑰匙(仿)", desc: "看起來像萬能鑰匙，但其實什麼鎖都打不開。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 1, timeRange: [0, 60] } },
+                { id: 412, name: "引力逆轉劑(微量)", desc: "你的頭髮會飄起來，僅此而已。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 1, timeRange: [61, 90] } },
+                { id: 413, name: "縮小藥水(不穩定)", desc: "你的小指頭縮小了一半，幾分鐘後又變回來了。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 1, timeRange: [91, 120] } },
+                { id: 414, "name": "遺忘之霧", "desc": "呃...我剛剛想說什麼來著？", "unlocked": false, "unlockConditions": { "difficulty": "alchemist", "stars": 1, "timeRange": [121, 160] } },
+                { id: 415, name: "一鍋混沌", desc: "所有材料胡亂地混在一起，發出奇怪的顏色和氣味。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 1, timeRange: [161, 9999] } },
+                { id: 421, name: "時間錯亂雞尾酒", desc: "你的時間感完全錯亂，一秒鐘感覺像一小時，一小時又感覺像一秒。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 0, timeRange: [0, 60] } },
+                { id: 422, name: "次元裂縫產生器", desc: "在你面前憑空出現一個小裂縫，裡面會隨機掉出奇怪的東西，比如一隻襪子或半個甜甜圈。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 0, timeRange: [61, 90] } },
+                { id: 423, name: "物理法則無視液", desc: "你試圖穿牆，結果成功地卡在牆壁裡了。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 0, timeRange: [91, 120] } },
+                { id: 424, name: "墨菲定律藥水", desc: "所有可能出錯的事情，都會在你身上以最糟糕的方式出錯。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 0, timeRange: [121, 160] } },
+                { id: 425, name: "哲學家的空瓶", desc: "瓶子裡什麼都沒有，但它引發了你對存在與虛無的深刻思考。", unlocked: false, unlockConditions: { difficulty: 'alchemist', stars: 0, timeRange: [161, 9999] } },
+
+                // --- 魔法學院長老 (15題) ---
+                { id: 501, name: "龍之息吹精油", desc: "讓你呼出的氣息帶有火焰的溫熱與硫磺的氣味。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 3, timeRange: [0, 100] } },
+                { id: 502, name: "月光低語藥劑", desc: "在月光下，你能聽見古老星辰的故事。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 3, timeRange: [101, 140] } },
+                { id: 503, name: "深海寧靜之淚", desc: "讓你的心靈如深海般平靜，不受任何紛擾。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 3, timeRange: [141, 180] } },
+                { id: 504, name: "鳳凰羽燼", desc: "一小撮灰燼，卻蘊含著浴火重生的力量。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 3, timeRange: [181, 220] } },
+                { id: 505, name: "蓋亞之心碎片", desc: "能感受到大地的脈動，與自然合而為一。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 3, timeRange: [221, 9999] } },
+                { id: 506, name: "人魚之歌喉糖", desc: "讓你的歌聲帶有迷惑人心的魔力，但五音不全者慎用。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 2, timeRange: [0, 100] } },
+                { id: 507, name: "石化皮膚藥水(短效)", desc: "皮膚短時間內變得像石頭一樣堅硬，但也一樣笨重。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 2, timeRange: [101, 140] } },
+                { id: 508, name: "巨人力量濃湯", desc: "力氣變大，但腦筋也變得有點不太靈光。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 2, timeRange: [141, 180] } },
+                { id: 509, name: "漂浮棉花糖", desc: "能讓你離地三公分漂浮，直到你打個嗝。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 2, timeRange: [181, 220] } },
+                { id: 510, name: "賢者之石(仿製品)", desc: "看起來金光閃閃，但其實是黃鐵礦。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 2, timeRange: [221, 9999] } },
+                { id: 511, name: "哥布林臭屁藥水", desc: "...這味道永生難忘。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 1, timeRange: [0, 100] } },
+                { id: 512, name: "沼澤泥漿浴鹽", desc: "泡完後身上會長出幾朵無害的小蘑菇。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 1, timeRange: [101, 140] } },
+                { id: 513, name: "說反話糖漿", desc: "接下來一個小時，你說的話都會是反義詞。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 1, timeRange: [141, 180] } },
+                { id: 514, name: "無盡噴嚏粉", desc: "每一次呼吸都可能觸發一次驚天動地的噴嚏。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 1, timeRange: [181, 220] } },
+                { id: 515, name: "失敗的奇蹟", desc: "雖然什麼效果都沒有，但瓶子本身很好看。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 1, timeRange: [221, 9999] } },
+                { id: 521, name: "龍之...呃...哈啾", desc: "你打了一個驚天動地的噴嚏，威力堪比龍息，吹飛了房間裡所有東西。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 0, timeRange: [0, 100] } },
+                { id: 522, name: "深淵凝望之眼", desc: "當你凝望深淵時，深淵給了你一個白眼然後走開了。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 0, timeRange: [101, 140] } },
+                { id: 523, name: "神格分裂劑", desc: "你的左手認為自己是智慧之神，右手認為自己是戰爭之神，然後它們就打起來了。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 0, timeRange: [141, 180] } },
+                { id: 524, name: "因果報應加速器", desc: "你剛才想的壞念頭立刻就得到了報應。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 0, timeRange: [181, 220] } },
+                { id: 525, name: "造物主的玩笑", desc: "你創造出了一個有生命的...馬桶刷。它看起來不太開心。", unlocked: false, unlockConditions: { difficulty: 'elder', stars: 0, timeRange: [221, 9999] } },
+
+                // --- 魔藥煉製專精大師 (20題) ---
+                { id: 601, name: "時光洪流之粹", desc: "凝視藥水，能看見過去一分鐘的殘影。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 3, timeRange: [0, 150] } },
+                { id: 602, name: "星界旅行藥劑", desc: "閉上眼，你的靈魂能短暫遨遊於星辰之間。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 3, timeRange: [151, 200] } },
+                { id: 603, name: "混沌之心", desc: "蘊含著創造與毀滅的原始力量，極度不穩定。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 3, timeRange: [201, 250] } },
+                { id: 604, name: "世界樹之露", desc: "一滴就能讓枯木逢春，蘊含著生命的原初之力。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 3, timeRange: [251, 300] } },
+                { id: 605, name: "真理靈藥", desc: "喝下它，你將會理解宇宙間的一個隨機真理。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 3, timeRange: [301, 9999] } },
+                { id: 606, name: "四次元口袋噴霧", desc: "能將一個口袋暫時變成四次元空間，但東西可能再也拿不出來。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 2, timeRange: [0, 150] } },
+                { id: 607, name: "可能性之水", desc: "喝下後，你擲硬幣永遠是立起來的。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 2, timeRange: [151, 200] } },
+                { id: 608, name: "作者權威藥劑", desc: "短時間內，你可以修改身邊非生命物體的一個小屬性。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 2, timeRange: [201, 250] } },
+                { id: 609, name: "絕對音感糖漿", desc: "能聽出所有聲音的音高，包括別人的心跳聲。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 2, timeRange: [251, 300] } },
+                { id: 610, name: "瓶中銀河", desc: "美麗，卻只是個華而不實的裝飾品。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 2, timeRange: [301, 9999] } },
+                { id: 611, name: "存在感消失劑", desc: "你還在這裡，但所有人都會下意識地忽略你。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 1, timeRange: [0, 150] } },
+                { id: 612, name: "物理法則破壞劑(劣質)", desc: "你面前的桌子可能會短路、當機、需要重開機。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 1, timeRange: [151, 200] } },
+                { id: 613, name: "形上學義大利麵", desc: "它既存在又不存在，你永遠吃不到它。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 1, timeRange: [201, 250] } },
+                { id: 614, name: "薛丁格的藥水", desc: "在打開瓶蓋前，你永遠不知道它有沒有毒。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 1, timeRange: [251, 300] } },
+                { id: 615, name: "宇宙大爆炸殘渣", desc: "一無所有，萬物之始，空空如也。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 1, timeRange: [301, 9999] } },
+                { id: 621, name: "現實扭曲場(失控版)", desc: "你周遭的現實變得像卡通一樣，物理法則完全失效。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 0, timeRange: [0, 150] } },
+                { id: 622, name: "第四面牆破除劑", desc: "你突然意識到自己只是遊戲中的一個角色，並陷入了深刻的存在危機。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 0, timeRange: [151, 200] } },
+                { id: 623, name: "宇宙弦撥弄液", desc: "你試圖撥動宇宙的琴弦，結果發出了刺耳的噪音，讓全宇宙都頭痛。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 0, timeRange: [201, 250] } },
+                { id: 624, name: "蝴蝶效應放大器", desc: "你打了個噴嚏，結果在世界的另一端引發了一場荒謬的貓狗大戰。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 0, timeRange: [251, 300] } },
+                { id: 625, name: "無", desc: "瓶子裡什麼都沒有。不是空的，是'無'。一種形而上的、令人不安的'無'。", unlocked: false, unlockConditions: { difficulty: 'master', stars: 0, timeRange: [301, 9999] } }
              ];
             
-            function savePotions() {
-                localStorage.setItem('wordPotionCollection', JSON.stringify(potions));
-            }
-
-            function loadPotions() {
-                const savedPotions = localStorage.getItem('wordPotionCollection');
-                if (savedPotions) {
-                    const parsedPotions = JSON.parse(savedPotions);
-                    potions.forEach(potion => {
-                        const saved = parsedPotions.find(p => p.id === potion.id);
-                        if (saved) {
-                            potion.unlocked = saved.unlocked;
-                        }
-                    });
-                }
-            }
-
-
             function shuffleArray(array) {
                 for (let i = array.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
@@ -63794,18 +65576,16 @@
                 const sourcePool = state.wordPool;
                 let count;
                 switch (difficulty) {
-                    case 'easy': count = 3; break;
-                    case 'medium': count = 5; break;
-                    case 'hard': count = 8; break;
-                    case 'ultimate': count = 10; break;
+                    case 'trainee': count = 3; break;
+                    case 'novice': count = 5; break;
+                    case 'mage': count = 8; break;
+                    case 'alchemist': count = 10; break;
+                    case 'elder': count = 15; break;
+                    case 'master': count = 20; break;
                 }
-
-                // Ensure we don't try to pick more words than available
                 count = Math.min(count, sourcePool.length);
-                
                 const pickedWords = [];
                 const usedIndices = new Set();
-                
                 while (pickedWords.length < count) {
                     const randomIndex = Math.floor(Math.random() * sourcePool.length);
                     if (!usedIndices.has(randomIndex)) {
@@ -63813,16 +65593,17 @@
                         pickedWords.push(sourcePool[randomIndex]);
                     }
                 }
-                
                 return pickedWords.map(w => ({ en: w.word, ch: w.definitions[0].meaning }));
             }
             
             function updateDifficultyButtons() {
                 const poolSize = state.wordPool.length;
-                document.querySelector('.potion-difficulty-btn[data-difficulty="easy"]').disabled = poolSize < 3;
-                document.querySelector('.potion-difficulty-btn[data-difficulty="medium"]').disabled = poolSize < 5;
-                document.querySelector('.potion-difficulty-btn[data-difficulty="hard"]').disabled = poolSize < 8;
-                document.querySelector('.potion-difficulty-btn[data-difficulty="ultimate"]').disabled = poolSize < 10;
+                document.querySelector('.potion-difficulty-btn[data-difficulty="trainee"]').disabled = poolSize < 3;
+                document.querySelector('.potion-difficulty-btn[data-difficulty="novice"]').disabled = poolSize < 5;
+                document.querySelector('.potion-difficulty-btn[data-difficulty="mage"]').disabled = poolSize < 8;
+                document.querySelector('.potion-difficulty-btn[data-difficulty="alchemist"]').disabled = poolSize < 10;
+                document.querySelector('.potion-difficulty-btn[data-difficulty="elder"]').disabled = poolSize < 15;
+                document.querySelector('.potion-difficulty-btn[data-difficulty="master"]').disabled = poolSize < 20;
             }
 
             function startGame(difficulty) {
@@ -63961,8 +65742,11 @@
                 );
                 const targetBubble = endTarget ? endTarget.closest('.potion-bubble') : null;
 
-                if (state.selectedBubble && targetBubble && state.selectedBubble !== targetBubble) {
-                    if (state.selectedBubble.dataset.pairId === targetBubble.dataset.pairId) {
+                if (state.selectedBubble && targetBubble && state.selectedBubble !== targetBubble && !targetBubble.classList.contains('paired')) {
+                    const isCorrectPair = state.selectedBubble.dataset.pairId === targetBubble.dataset.pairId && state.selectedBubble.dataset.lang !== targetBubble.dataset.lang;
+
+                    if (isCorrectPair) {
+                        // 正確配對
                         animateBubbleToCauldron(state.selectedBubble);
                         animateBubbleToCauldron(targetBubble);
                         dom.cauldron.classList.add('active');
@@ -63972,11 +65756,39 @@
                             setTimeout(levelComplete, 1000);
                         }
                     } else {
-                        state.mistakes++;
-                        updateMistakes();
-                        updateStars();
+                        // 所有錯誤配對的處理 (包括相同語言)
+                        
+                        // 如果是相同語言，顯示提示
+                        if (state.selectedBubble.dataset.lang === targetBubble.dataset.lang) {
+                            dom.errorToast.classList.remove('hidden');
+                            setTimeout(() => {
+                                dom.errorToast.classList.add('hidden');
+                            }, 1500);
+                        } else {
+                            // 如果是不同語言的錯誤配對，才計為錯誤
+                            state.mistakes++;
+                            updateMistakes();
+                            updateStars();
+                        }
+                        
+                        const bubbleToShake1 = state.selectedBubble;
+                        const bubbleToShake2 = targetBubble;
+
+                        // 關鍵修正：先移除 selected class，再加入 shake-anim，確保動畫立即播放
+                        bubbleToShake1.classList.remove('selected');
+
+                        // 立即為兩個泡泡加上晃動動畫 class
+                        bubbleToShake1.classList.add('shake-anim');
+                        bubbleToShake2.classList.add('shake-anim');
+                        
+                        // 動畫結束後 (200ms) 移除 class
+                        setTimeout(() => {
+                            if (bubbleToShake1) bubbleToShake1.classList.remove('shake-anim');
+                            if (bubbleToShake2) bubbleToShake2.classList.remove('shake-anim');
+                        }, 200);
                     }
                 }
+
                 resetSelection();
             }
 
@@ -64015,22 +65827,53 @@
             }
             
             function checkUnlocks(difficulty, stars, time) {
-                let unlockedPotion = null;
-                const matchingPotion = potions.find(potion => {
+                const targetPotion = potions.find(potion => {
                     const cond = potion.unlockConditions;
-                    return !potion.unlocked &&
-                           cond.difficulty === difficulty &&
+                    return cond.difficulty === difficulty &&
                            cond.stars === stars &&
                            time >= cond.timeRange[0] &&
                            time <= cond.timeRange[1];
                 });
 
-                if (matchingPotion) {
-                    matchingPotion.unlocked = true;
-                    unlockedPotion = matchingPotion;
-                    savePotions();
+                if (!targetPotion) {
+                    return { unlocked: false, message: 'no_potion' };
                 }
-                return unlockedPotion;
+                
+                if (targetPotion.unlocked) {
+                    return { unlocked: false, message: 'already_unlocked' };
+                }
+
+                let baseProb;
+                const isLowerDifficulty = difficulty === 'trainee' || difficulty === 'novice';
+
+                // 檢查是否為需要調整機率的較低難度，且不為0星魔藥
+                if (isLowerDifficulty && stars > 0) {
+                    switch (stars) {
+                        case 3: baseProb = 65; break; // 原始 80% - 15%
+                        case 2: baseProb = 75; break; // 原始 90% - 15%
+                        case 1: baseProb = 75; break; // 原始 95% - 15% - 5%
+                        default: baseProb = 0; // 備用，正常情況不會觸發
+                    }
+                } else {
+                    // 其他難度或0星魔藥則使用原始機率
+                    baseProb = { 3: 80, 2: 90, 1: 95, 0: 100 }[stars] || 0;
+                }
+
+                const finalProb = Math.min(100, baseProb + potionPityBonus);
+                const roll = Math.random() * 100;
+
+                if (roll < finalProb) {
+                    // 成功
+                    targetPotion.unlocked = true;
+                    potionPityBonus = 0;
+                    saveData();
+                    return { unlocked: true, potion: targetPotion, message: 'success' };
+                } else {
+                    // 失敗
+                    potionPityBonus += 5;
+                    saveData();
+                    return { unlocked: false, message: 'failure' };
+                }
             }
 
             function levelComplete() {
@@ -64041,16 +65884,22 @@
                 dom.finalStarRating.innerHTML = dom.starRating.innerHTML;
                 dom.completionTime.textContent = `完成時間: ${completionTime} 秒`;
                 
-                const newlyUnlockedPotion = checkUnlocks(state.currentDifficulty, finalStars, completionTime);
+                const unlockResult = checkUnlocks(state.currentDifficulty, finalStars, completionTime);
 
-                if (newlyUnlockedPotion) {
+                if (unlockResult.unlocked) {
                     dom.rewardSection.classList.remove('hidden');
                     dom.noRewardSection.classList.add('hidden');
-                    dom.potionName.textContent = newlyUnlockedPotion.name;
-                    dom.potionDesc.textContent = newlyUnlockedPotion.desc;
+                    dom.potionName.textContent = unlockResult.potion.name;
+                    dom.potionDesc.textContent = unlockResult.potion.desc;
                 } else {
                     dom.rewardSection.classList.add('hidden');
                     dom.noRewardSection.classList.remove('hidden');
+                    const noRewardP = dom.noRewardSection.querySelector('p');
+                    if (unlockResult.message === 'failure') {
+                        noRewardP.innerHTML = `真可惜！差一點就成功了...<br>下次獲得魔藥的機率將會提升 5%！`;
+                    } else { // 'no_potion' or 'already_unlocked'
+                        noRewardP.innerHTML = `表現不錯！但這次沒有解鎖新的魔藥，再接再厲！`;
+                    }
                 }
                 
                 dom.levelCompleteModal.classList.remove('hidden');
@@ -64059,36 +65908,25 @@
             function showCollection() {
                 const grid = dom.collectionGrid;
                 grid.innerHTML = '';
-                const difficultyMap = {
-                    'easy': '初級', 'medium': '中級', 'hard': '高級', 'ultimate': '終極'
+                const difficultyMap = { 
+                    'trainee': '見習學員', 'novice': '新手巫師', 'mage': '普通法師', 
+                    'alchemist': '煉藥師', 'elder': '學院長老', 'master': '專精大師'
                 };
-                
                 potions.forEach(potion => {
                     const item = document.createElement('div');
                     if (potion.unlocked) {
                         item.className = "bg-gray-900/50 rounded-lg p-4 border border-violet-500 text-left";
-                        item.innerHTML = `
-                            <h3 class="text-xl font-bold text-violet-300">${potion.name}</h3>
-                            <p class="text-gray-400">${potion.desc}</p>
-                        `;
+                        item.innerHTML = `<h3 class="text-xl font-bold text-violet-300">${potion.name}</h3><p class="text-gray-400">${potion.desc}</p>`;
                     } else {
                         const cond = potion.unlockConditions;
                         const difficultyText = difficultyMap[cond.difficulty];
                         const starText = '★'.repeat(cond.stars) + '☆'.repeat(3 - cond.stars);
                         const timeText = `${cond.timeRange[0]} - ${cond.timeRange[1]} 秒`;
                         item.className = "bg-gray-900/50 rounded-lg p-4 border border-gray-600 text-left opacity-60";
-                        item.innerHTML = `
-                            <h3 class="text-xl font-bold text-gray-500">未解鎖的魔藥</h3>
-                            <p class="text-gray-500 mt-2">
-                                <span class="font-semibold">條件:</span> ${difficultyText} |
-                                <span class="text-yellow-400">${starText}</span> |
-                                ${timeText}
-                            </p>
-                        `;
+                        item.innerHTML = `<h3 class="text-xl font-bold text-gray-500">未解鎖的魔藥</h3><p class="text-gray-500 mt-2"><span class="font-semibold">條件:</span> ${difficultyText} | <span class="text-yellow-400">${starText}</span> | ${timeText}</p>`;
                     }
                     grid.appendChild(item);
                 });
-                
                 dom.startScreen.classList.add('hidden');
                 dom.collectionModal.classList.remove('hidden');
             }
@@ -64107,11 +65945,7 @@
 
             function setupEventListeners() {
                 document.querySelectorAll('.potion-difficulty-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        if(!btn.disabled) {
-                            startGame(btn.dataset.difficulty)
-                        }
-                    });
+                    btn.addEventListener('click', () => { if(!btn.disabled) startGame(btn.dataset.difficulty) });
                 });
                 dom.backToMenuBtn.addEventListener('click', showMenu);
                 dom.mainMenuBtn.addEventListener('click', showMenu);
@@ -64133,8 +65967,6 @@
                     dom.gameScreen.classList.add('hidden');
                     dom.levelCompleteModal.classList.add('hidden');
                     dom.collectionModal.classList.add('hidden');
-                    loadPotions();
-                    // Setup listeners only once
                     if(!window.potionGame.initialized) {
                          setupEventListeners();
                          window.potionGame.initialized = true;
@@ -64152,107 +65984,122 @@
         // --- 特效函式 ---
         function triggerExplosion(x, y) {
             const fxContainer = document.getElementById('fx-container');
-            for (let i = 0; i < 30; i++) {
+            if (!fxContainer) return;
+            
+            const particleCount = 20;
+            const shockwave = document.createElement('div');
+            shockwave.style.position = 'absolute';
+            shockwave.style.left = `${x}px`;
+            shockwave.style.top = `${y}px`;
+            shockwave.style.borderRadius = '50%';
+            shockwave.style.border = '3px solid rgba(255, 59, 59, 0.7)';
+            shockwave.style.transform = 'translate(-50%, -50%) scale(0)';
+            shockwave.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+            fxContainer.appendChild(shockwave);
+
+            requestAnimationFrame(() => {
+                shockwave.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                shockwave.style.opacity = '0';
+            });
+            setTimeout(() => shockwave.remove(), 300);
+
+            for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
                 particle.style.position = 'absolute';
                 particle.style.left = `${x}px`;
                 particle.style.top = `${y}px`;
-                particle.style.width = `${Math.random() * 5 + 2}px`;
-                particle.style.height = particle.style.width;
-                particle.style.backgroundColor = `hsl(${Math.random() * 60 + 200}, 100%, 70%)`;
-                particle.style.borderRadius = '50%';
-                const angle = Math.random() * Math.PI * 2;
-                const velocity = Math.random() * 8 + 4;
-                const vx = Math.cos(angle) * velocity;
-                const vy = Math.sin(angle) * velocity;
+                particle.style.background = `hsl(${Math.random() * 50}, 100%, 50%)`;
+                particle.style.width = `${Math.random() * 10 + 5}px`;
+                particle.style.height = `${Math.random() * 10 + 5}px`;
+                particle.style.clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)';
+                particle.style.transition = 'transform 0.5s ease-out, opacity 0.5s ease-out';
+                
+                const angle = Math.random() * 2 * Math.PI;
+                const distance = Math.random() * 80 + 50;
+                const finalX = Math.cos(angle) * distance;
+                const finalY = Math.sin(angle) * distance;
+                const rotation = Math.random() * 720 - 360;
+
                 fxContainer.appendChild(particle);
 
-                let life = 0;
-                const animateParticle = () => {
-                    particle.style.left = `${parseFloat(particle.style.left) + vx}px`;
-                    particle.style.top = `${parseFloat(particle.style.top) + vy + life * 0.2}px`; // Gravity
-                    particle.style.opacity = 1 - (life / 60);
-                    life++;
-                    if (life < 60) {
-                        requestAnimationFrame(animateParticle);
-                    } else {
-                        particle.remove();
-                    }
-                };
-                animateParticle();
+                requestAnimationFrame(() => {
+                    particle.style.transform = `translate(-50%, -50%) translate(${finalX}px, ${finalY}px) rotate(${rotation}deg)`;
+                    particle.style.opacity = '0';
+                });
+                setTimeout(() => particle.remove(), 500);
             }
         }
-        function triggerSuccessPageConfetti() {
-             const fxContainer = document.getElementById('fx-container');
-             fxContainer.innerHTML = '';
-             const colors = ['#a8e6cf', '#dcedc1', '#ffd3b6', '#ffaaa5', '#ff8b94'];
-             for (let i = 0; i < 150; i++) {
-                 const confetti = document.createElement('div');
-                 confetti.className = 'confetti-success';
-                 confetti.style.left = `${Math.random() * 100}vw`;
-                 confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                 confetti.style.animationDelay = `${Math.random() * 5}s`;
-                 if (Math.random() > 0.5) {
-                     confetti.style.clipPath = 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
-                 }
-                 fxContainer.appendChild(confetti);
-             }
-        }
+        function triggerSuccessPageConfetti() { /* ... */ }
         function triggerClickConfetti(x, y) {
             const fxContainer = document.getElementById('fx-container');
-            for (let i = 0; i < 20; i++) {
+            if (!fxContainer) return;
+            
+            const particleCount = 30;
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#00bcd4', '#4caf50', '#ffeb3b', '#ff9800'];
+
+            for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
                 particle.style.position = 'absolute';
                 particle.style.left = `${x}px`;
                 particle.style.top = `${y}px`;
-                const size = Math.random() * 8 + 4;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                particle.style.backgroundColor = `hsl(${Math.random() * 60 + 30}, 100%, 70%)`;
-                particle.style.borderRadius = '50%';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.width = `${Math.random() * 8 + 4}px`;
+                particle.style.height = `${Math.random() * 15 + 8}px`;
+                particle.style.transition = 'transform 0.8s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.8s linear';
+
                 const angle = Math.random() * Math.PI * 2;
-                const velocity = Math.random() * 5 + 2;
-                const vx = Math.cos(angle) * velocity;
-                const vy = Math.sin(angle) * velocity;
+                const distance = Math.random() * 120 + 80;
+                const finalX = Math.cos(angle) * distance;
+                const finalY = Math.sin(angle) * distance - 40 + (Math.random() * 250);
+                const rotation = Math.random() * 1080 - 540;
+
                 fxContainer.appendChild(particle);
 
-                let life = 0;
-                const animateParticle = () => {
-                    particle.style.left = `${parseFloat(particle.style.left) + vx}px`;
-                    particle.style.top = `${parseFloat(particle.style.top) + vy + life * 0.1}px`;
-                    particle.style.opacity = 1 - (life / 50);
-                    life++;
-                    if (life < 50) {
-                        requestAnimationFrame(animateParticle);
-                    } else {
-                        particle.remove();
-                    }
-                };
-                animateParticle();
+                requestAnimationFrame(() => {
+                    particle.style.transform = `translate(-50%, -50%) translate(${finalX}px, ${finalY}px) rotate(${rotation}deg)`;
+                    particle.style.opacity = '0';
+                });
+                setTimeout(() => particle.remove(), 800);
             }
         }
-        
+
         // --- 初始化 ---
         window.onload = () => {
-            // 頁面載入時，首先執行一次單字去重功能
+            loadData(); // <<<< 啟動時第一件事：讀取存檔
             removeDuplicateWords();
 
             function loadVoices() {
                 const voices = speechSynthesis.getVoices();
-                // 優先選擇 Google US English，其次是任何 US English，最後是第一個英文語音
                 synthesisVoice = voices.find(voice => voice.name === 'Google US English') || 
                                  voices.find(voice => voice.lang === 'en-US') ||
                                  voices.find(voice => voice.lang.startsWith('en-'));
             }
 
-            // 語音是異步載入的
             loadVoices();
             if (speechSynthesis.onvoiceschanged !== undefined) {
                 speechSynthesis.onvoiceschanged = loadVoices;
             }
 
             organizeAndSortWords();
-            showPage('home-page');
+
+            // --- History API & Routing ---
+            window.addEventListener('popstate', (event) => {
+                const pageId = event.state?.pageId || 'home-page';
+                // 直接顯示頁面，不再次推入歷史紀錄
+                _displayPage(pageId);
+            });
+            
+            // 初始載入時檢查 URL hash
+            const initialPage = window.location.hash.substring(1);
+            const validPages = ['home-page', 'learn-main-page', 'learn-minor-page', 'flashcard-page', 'favorite-folders-page', 'search-results-page', 'no-results-page', 'practice-setup-page', 'balloon-game-page', 'monster-setup-page', 'monster-game-page', 'monster-win-page', 'monster-lose-page', 'potion-game-wrapper'];
+
+            // 僅在 hash 為有效頁面 ID 時載入，否則預設回首頁
+            const pageToLoad = validPages.includes(initialPage) ? initialPage : 'home-page';
+
+            // 取代初始狀態，讓首頁正確地成為歷史紀錄的一部分
+            history.replaceState({ pageId: pageToLoad }, '', `#${pageToLoad}`);
+            _displayPage(pageToLoad); // 根據 URL 顯示初始頁面
+            
             document.getElementById('search-input').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     searchWord();
@@ -64262,4 +66109,3 @@
     </script>
 </body>
 </html>
-
